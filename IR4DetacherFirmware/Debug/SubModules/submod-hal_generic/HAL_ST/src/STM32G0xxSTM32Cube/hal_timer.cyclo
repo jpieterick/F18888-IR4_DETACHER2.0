@@ -1,8 +1,8 @@
 ../Drivers/CMSIS/Include/core_cm0plus.h:779:22:__NVIC_DisableIRQ	2
-../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_timer.c:61:10:hal_timer_get_systick	1
-../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_timer.c:81:10:hal_timer_get_ticks_since_count	2
-../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_timer.c:101:6:hal_timer_start_systick	1
-../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_timer.c:111:6:hal_timer_stop_systick	1
-../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_timer.c:116:6:hal_timer_init	1
-../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_timer.c:157:6:hal_timer_init_w_callback	1
-../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_timer.c:163:6:hal_timer_deinit	3
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_timer.c:57:10:hal_timer_get_systick	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_timer.c:77:10:hal_timer_get_ticks_since_count	2
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_timer.c:97:6:hal_timer_start_systick	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_timer.c:107:6:hal_timer_stop_systick	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_timer.c:112:6:hal_timer_init	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_timer.c:148:6:hal_timer_init_w_callback	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_timer.c:154:6:hal_timer_deinit	3

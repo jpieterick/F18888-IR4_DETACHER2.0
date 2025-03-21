@@ -4,3 +4,6 @@
 [submodule "IR4DetacherFirmware/Submodules/submod-ir_comms"]
 	path = IR4DetacherFirmware/Submodules/submod-ir_comms
 	url = https://github.com/invuefirmware/submod-ir_comms
+[submodule "IR4DetacherFirmware/Submodules/submod-cyclic_fifo_queue"]
+	path = IR4DetacherFirmware/Submodules/submod-cyclic_fifo_queue
+	url = https://github.com/invuefirmware/submod-cyclic_fifo_queue

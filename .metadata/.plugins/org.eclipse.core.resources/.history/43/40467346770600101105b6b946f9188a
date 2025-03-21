@@ -1,0 +1,47 @@
+/**********************************
+ * File: hal_rtc.h
+ * Invue Security Products
+ * Copyright 2020
+ **********************************/
+
+#ifndef __rtc_H
+#define __rtc_H
+#ifdef __cplusplus
+ extern "C" {
+#endif
+
+#include "periphdefs.h"
+
+// Include this definition in periphdefs.h
+#if defined USE_HAL_RTC
+
+void hal_rtc_init(void);
+void hal_rtc_deinit(void);
+
+typedef struct time
+{
+  uint8_t hours;
+  uint8_t minutes;
+  uint8_t seconds;
+} rtc_time_t;
+
+typedef struct date
+{
+  uint8_t year;     // 0-99
+  uint8_t month;    // 1-12
+  uint8_t date;     // 1-31
+  uint8_t weekday;  // 1-7 -> 1: Monday, 7: Sunday
+} rtc_date_t;
+
+void hal_rtc_set_time(rtc_time_t const time);
+rtc_time_t hal_rtc_get_time(void);
+
+void hal_rtc_set_date(rtc_date_t const date);
+rtc_date_t hal_rtc_get_date(void);
+
+#endif  // USE_HAL_RTC
+
+#ifdef __cplusplus
+}
+#endif
+#endif // __rtc_H

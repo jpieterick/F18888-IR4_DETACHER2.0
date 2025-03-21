@@ -12,5 +12,5 @@
 ../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_uart.c:369:6:hal_uart_send_byte	7
 ../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_uart.c:397:6:hal_uart_is_waiting_for_transmit_complete	1
 ../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_uart.c:402:13:uart_irq_handler	25
-../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_uart.c:591:6:USART1_IRQHandler	1
-../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_uart.c:597:6:USART2_IRQHandler	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_uart.c:592:6:USART1_IRQHandler	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_uart.c:599:6:USART2_IRQHandler	1

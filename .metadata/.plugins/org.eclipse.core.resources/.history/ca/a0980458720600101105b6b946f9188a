@@ -1,0 +1,105 @@
+# HAL ST Usage Guide
+
+The HAL ST src folder contains the functionality to meet the functionality of InVue's Generic HAL API. The src code is essentially a wrapper of supported HAL Cube packages.
+
+The current supported HAL Cube packages:
+
+- STM32CubeG0
+- STM32CubeL0
+
+The HAL Cube packages are not presently included within this submodule. Configure.py scripts exist in the HAL_ST/.scripts directory in this module to correctly install the packages.  
+  
+## Architecture
+
+The primary goal of this submodule is to maintain a clean, consistent, and hardware-agnostic API to speed up application development and improve code consistency. Changes to the HAL Generic header files must be minimal and carefully curated to maintain a consistent application framework that will work for other target MCU vendors. No ST-specific code should be added to the header files.
+
+Instead, the generic API relies on definitions in periphdefs.h/.c and pindefs.h/.c files - a sort-of contract that certiain definitions will be provided for the HAL implementation to use. Along with the startup file, linker script, interrupts setup, and clock setup, these files combine to a minimal BSP definition at the application layer for the project.  
+  
+## Configuration
+
+An explanation of the necessary configuration to use the ST portion of this submodule follows.
+
+### Pin Definitions
+
+Pin definitions are defined at the application layer in pindefs.h/.c and is required to use this submodule. The pindefs.h file requires the following:
+
+    # include "stm32[XX]xx.h"
+
+    enum pin_id
+    {
+      PIN_ID_[YOUR_PIN_1],
+      PIN_ID_[YOUR_PIN_2],
+      NUM_PINS
+    };
+
+    typedef GPIO_InitTypeDef pin_config_t;
+    pin_config_t const pin_defs[NUM_PINS];
+
+    typedef GPIO_TypeDef pin_port_t;
+    pin_port_t* const port_defs[NUM_PINS];
+
+The pindefs.c file then initializes the pin_defs and port_defs arrays using ST's TypeDef definitions.
+
+---
+
+### Peripheral Definitions
+
+Peripheral definitions are defined at the application layer in periphdefs.h/.c and is required to use this submodule. Generally, but not universally, three definitions are required for each peripheral:
+
+- [peripheral]_config_t
+- [peripheral]_inst_t
+- [peripheral]_handle_t
+
+In most cases, these are just a redefinition of ST's built-in peripheral type definitions. Additionally, each peripheral is accessed by an ID (when more than 1 instance of a peripheral is possible) and stored in arrays similar to pin definitions. Most peripherals also support defining initialization callbacks for setup. Additionaly, for compilation reasons, a USE_HAL_[PERIPHERAL] macro is needed to "turn-on" the compilation of a peripheral.
+
+The UART driver requires more setup. An example UART definition for an STM32 MCU in periphdefs.h follows:
+
+    #define USE_HAL_UART
+
+    #define UART_BUSA       0 // USART1
+    #define UART_BUSB       1 // USART2
+    #define NUM_UART_BUSES  2
+
+    enum uart_id
+    {
+      UART_ID_[YOUR_UART1],
+      UART_ID_[YOUR_UART2],
+      NUM_UARTS
+    };
+
+    typedef enum
+    {
+      UART_TYPE_USART,
+      UART_TYPE_LPUART
+    } module_type_t;
+
+    typedef enum
+    {
+      ONE_WIRE,
+      TWO_WIRE,
+      TWO_PINS_ONE_WIRE
+    } uart_mode_t;
+
+    typedef void (*blocking_callback)(void);
+
+    typedef struct
+    {
+      USART_TypeDef*    uart_module;
+      module_type_t     uart_type;
+      uart_mode_t       uart_mode;
+      uint32_t          target_baud_bps;
+      uint32_t          module_clock_hz;
+      blocking_callback blocking_delay;
+    } uart_hal_t;
+
+    typedef struct
+    {
+      uint8_t     uart_bus_num;
+      uart_hal_t  uart_hal;
+    } uart_config_t;
+
+    uart_config_t const uart_defs[NUM_UARTS];
+
+Peripheral-specific documentation is a work-in-progress for the src files in this submodule. Reference the Cube package src files in STM32[XX]xx_HAL_Driver for a better idea of the appropriate typedefs and callbacks necessary for your peripheral.
+
+---

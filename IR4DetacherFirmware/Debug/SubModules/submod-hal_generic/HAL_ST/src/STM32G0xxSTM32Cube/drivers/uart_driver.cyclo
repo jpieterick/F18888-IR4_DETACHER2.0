@@ -1,0 +1,13 @@
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/drivers/uart_driver.c:39:16:uart_driver_init	2
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/drivers/uart_driver.c:106:13:uarta_driver_buffered_byte_rx	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/drivers/uart_driver.c:110:16:uarta_driver_buffered_byte_tx	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/drivers/uart_driver.c:149:14:uart_driver_byte_available	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/drivers/uart_driver.c:154:14:uart_driver_tx_bytes_remaining	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/drivers/uart_driver.c:159:14:uart_driver_rx_bytes_remaining	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/drivers/uart_driver.c:164:14:uart_driver_tx_bytes_available	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/drivers/uart_driver.c:169:6:uart_driver_tx_add_byte	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/drivers/uart_driver.c:173:6:uart_driver_is_transmitter_enabled	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/drivers/uart_driver.c:179:6:uart_driver_is_receiver_enabled	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/drivers/uart_driver.c:186:6:uart_driver_is_receiving	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/drivers/uart_driver.c:191:6:uart_driver_is_transmitting	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/drivers/uart_driver.c:196:6:uart_driver_start_transmit_if_stopped	1

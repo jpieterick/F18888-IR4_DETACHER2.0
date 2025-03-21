@@ -42,6 +42,7 @@
 "./HardwareAbstractionLayer/STM32G070xx/config/Src/pindefs.o"
 "./HardwareAbstractionLayer/STM32G070xx/hardware_abstraction_layer.o"
 "./HardwareAbstractionLayer/STM32G070xx/startup.o"
+"./SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/drivers/uart_driver.o"
 "./SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_cec.o"
 "./SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_flash.o"
 "./SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_gpio.o"

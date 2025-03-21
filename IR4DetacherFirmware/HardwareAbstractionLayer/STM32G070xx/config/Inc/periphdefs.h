@@ -155,8 +155,6 @@ typedef struct timer_config
 
 extern timer_config_t const timer_defs[NUMBER_OF_TIMERS];
 
-
-
 /******************************************************************************
  * ANALOG TO DIGITAL CONVERSIONS *********************************************/
 #define USE_HAL_ADC
@@ -185,16 +183,23 @@ enum adc_id
 //#define USING_UART4
 
 #if defined USE_HAL_UART
-typedef enum uart_indx
-{
-    UART1INDX,  // ir dot or daisy chaining
-	UART2INDX,  // micro usb power
-	UART3INDX,  // dongle
-#ifdef USING_UART4
-	UART4INDX
+
+// Setup the #defines for the UART_BUSx constants. Note that #defines are being used instead of an enum
+// because these constants are used in #ifdef statements as well as to index into arrays.
+#define UART_BUSA      0
+//#define UART_BUSB      1
+//#define UART_BUSC      2
+//#define UART_BUSD      3
+
+#ifdef UART_BUSD
+#define NUM_UART_BUSES 4
+#elif defined (UART_BUSC)
+#define NUM_UART_BUSES 3
+#elif defined (UART_BUSB)
+#define NUM_UART_BUSES 2
+#elif defined (UART_BUSA)
+#define NUM_UART_BUSES 1
 #endif
-	NUMBER_OF_UARTS
-} uart_indx_t;
 /*
 #define UART_IR_DOT (UART1ID)  // ir dot or daisy chaining
 #define UART_POWER (UART2ID)   // micro usb power
@@ -247,7 +252,7 @@ typedef struct
 	uart_hal_t  uart_hal;
 } uart_config_t;
 
-extern uart_config_t const uart_defs[NUMBER_OF_UARTS];
+extern uart_config_t const uart_defs[NUM_UART_BUSES];
 
 
 #endif

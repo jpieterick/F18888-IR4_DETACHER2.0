@@ -10,6 +10,7 @@ RM := rm -rf
 # All of the sources participating in the build are defined here
 -include sources.mk
 -include SubModules/submod-ir_comms/subdir.mk
+-include SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/drivers/subdir.mk
 -include SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/subdir.mk
 -include HardwareAbstractionLayer/STM32G070xx/config/Src/subdir.mk
 -include HardwareAbstractionLayer/STM32G070xx/subdir.mk
