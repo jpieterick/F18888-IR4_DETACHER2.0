@@ -1,0 +1,77 @@
+/**********************************
+ * File: hal_timer.h
+ * Invue Security Products
+ * Copyright 2020
+ **********************************/
+
+#ifndef __timer_H
+#define __timer_H
+
+#ifdef __cplusplus
+ extern "C" {
+#endif
+
+#include <stdint.h>
+#include <periphdefs.h>
+
+uint32_t hal_timer_get_systick(void);
+uint32_t hal_timer_get_ticks_since_count(uint32_t lastCount);
+void hal_timer_start_systick(void);
+void hal_timer_init_systick( void (*systick_isr_cb)(void) );
+void hal_timer_stop_systick(void);
+
+#if defined USE_HAL_TIMER
+
+void hal_timer_init(void);
+void hal_timer_deinit(enum timer_id id);
+uint32_t hal_timer_get_timers_frequency( enum timer_id id );
+void hal_timer_start_timer( enum timer_id id );
+void hal_timer_stop_timer( enum timer_id id );
+void hal_timer_install_int_callback( enum timer_id id, void (*timer_irq_cb)(uint16_t) );
+/* Blocking Delays use TIM6 by default but can be reconfigured as a different BASIC timer with the following function */
+void hal_timer_set_timer_for_blocking_delays(enum timer_id timer_for_blocking_delays);
+
+/* blocking delays with specific periods */
+void hal_timer_blocking_delay_for_50us(void);
+void hal_timer_blocking_delay_for_100us(void);
+void hal_timer_blocking_delay_for_152us(void);
+void hal_timer_blocking_delay_variable_usec(uint32_t delay_usec);
+
+/* to stop PWMing, set period and/or on_time to 0 */
+void hal_timer_set_pwm_output_period(enum timer_id id, uint16_t period, uint16_t on_time);
+bool hal_timer_is_running_in_pwm_mode( enum timer_id id );
+/* When the count has elapsed, the HAL will automatically call
+ * void called_from_hal_timer_interrupt(uint16_t time_elapsed), which is 
+ * expected to be defined and externed by the application.  Set count to 0 to 
+ * disable the timeout before it elapses.  called_from_hal_timer_interrupt() 
+ * will not be called periodically; it is one-shot only.
+ *
+ * Returns the number of counts since the last event, capped at 0xFFFF.  An 
+ * event is either the last time this function was called, or the last time the 
+ * timer elapsed, whichever of the two happened most recently.
+ */
+uint16_t hal_timer_set_elapse_count(uint16_t count);
+
+/* Returns the number of counts since the last event, capped at 0xFFFF.  An 
+ * event is either the last time hal_timer_set_pwm_output_period() was called, 
+ * or the last time the timer elapsed, whichever of the two is most recent.
+ */
+uint16_t hal_timer_get_counts_since_last_event(void);
+
+
+//TODO: these are currently hardcoded to LPTIM1
+void hal_timer_enable_general_interrupt_timer_interrupt(void);
+void hal_timer_disable_general_interrupt_timer_interrupt(void);
+
+void hal_timer_start_oneshot_tmr( enum timer_id id, uint32_t timer_counts, uint32_t prescale_powers_of_2 );
+void hal_timer_stop_oneshot_tmr( enum timer_id id );
+
+#endif // USE_HAL_TIMER
+
+
+
+
+#ifdef __cplusplus
+}
+#endif
+#endif // __timer_H

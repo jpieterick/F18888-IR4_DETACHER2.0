@@ -1,0 +1,16 @@
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_flash.c:40:6:hal_flash_erase	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_flash.c:62:6:hal_flash_write	15
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_flash.c:112:13:unlock_flash	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_flash.c:117:13:lock_flash	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_flash.c:122:13:double_word_flash_prog	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_flash.c:133:17:get_page	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_flash.c:140:10:hal_flash_get_highest_address	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_flash.c:146:10:hal_flash_get_lowest_address	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_flash.c:152:10:hal_flash_get_highest_used_address	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_flash.c:158:10:hal_flash_get_lowest_used_address	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_flash.c:164:10:hal_flash_get_highest_bootloader_address	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_flash.c:170:10:hal_flash_get_lowest_bootloader_address	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_flash.c:181:10:hal_flash_get_nonvolatile_storage_start_address	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_flash.c:187:10:hal_flash_get_nonvolatile_storage_end_address	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_flash.c:192:8:hal_flash_get_nonvolatile_storage_sector_size	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_flash.c:197:8:hal_flash_get_minimum_flash_write_size	1

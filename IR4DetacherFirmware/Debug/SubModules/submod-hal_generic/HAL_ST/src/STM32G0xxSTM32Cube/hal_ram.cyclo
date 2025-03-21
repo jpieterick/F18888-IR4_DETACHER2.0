@@ -1,0 +1,2 @@
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_ram.c:10:10:hal_ram_get_stack_overflow_guard_region_start	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_ram.c:16:10:hal_ram_get_stack_overflow_guard_region_end	1

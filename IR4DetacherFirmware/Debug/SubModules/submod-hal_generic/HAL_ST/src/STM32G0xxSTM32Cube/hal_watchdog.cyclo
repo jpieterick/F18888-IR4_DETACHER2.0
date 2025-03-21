@@ -1,0 +1,5 @@
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_watchdog.c:67:6:hal_watchdog_init	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_watchdog.c:76:6:hal_watchdog_enable	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_watchdog.c:81:6:hal_watchdog_disable	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_watchdog.c:86:6:hal_watchdog_reset	2
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_watchdog.c:95:6:hal_watchdog_was_reset	2

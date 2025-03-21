@@ -1,0 +1,57 @@
+/**********************************
+ * File: hal_gpio.c
+ * Invue Security Products
+ * Copyright 2020
+ **********************************/
+#include "hal_gpio.h"
+
+#include "stm32g0xx_hal.h"
+#include "stm32g0xx_ll_gpio.h"
+#include "main.h"
+
+void hal_gpio_init(void)
+{
+	// Call the GPIO initialization function setup by the STM32CubeIDE Device Configuration Tool:
+	MX_GPIO_Init();
+}
+
+void hal_gpio_deinit(void)
+{
+  for (uint16_t i = 0u; i < NUM_PINS; i++)
+  {
+    hal_gpio_pin_deinit(i);
+  }
+}
+
+
+// TODO: Rewrite this function to accept the pin_init structure as a parameter.
+void hal_gpio_pin_init(enum pin_id id)
+{
+  GPIO_InitTypeDef pin_init = pin_defs[id];
+  HAL_GPIO_Init(port_defs[id], &pin_init);
+}
+
+void hal_gpio_pin_deinit(enum pin_id id)
+{
+  HAL_GPIO_DeInit(port_defs[id], pin_defs[id].Pin);
+}
+
+bool hal_gpio_get_input(enum pin_id id)
+{
+  return HAL_GPIO_ReadPin(port_defs[id], pin_defs[id].Pin);
+}
+
+void hal_gpio_set_output(enum pin_id id, bool value)
+{
+  HAL_GPIO_WritePin(port_defs[id], pin_defs[id].Pin, (GPIO_PinState)(value != false));
+}
+
+void hal_gpio_toggle_output(enum pin_id id)
+{
+  HAL_GPIO_TogglePin(port_defs[id], pin_defs[id].Pin);
+}
+
+void hal_gpio_set_pull(enum pin_id id, uint32_t pull)
+{
+  LL_GPIO_SetPinPull(port_defs[id], pin_defs[id].Pin, pull);
+}

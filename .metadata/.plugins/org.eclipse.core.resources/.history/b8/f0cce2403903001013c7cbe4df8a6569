@@ -1,0 +1,116 @@
+/****************************************************************************
+*   Copyright 2024 InVue Security Products, Charlotte, NC
+*
+*  File: ir_comms_product_list.h
+*
+*  Description: This file should be modified when a new product is added.
+*                  The InVue FW wiki must be updated with any additional
+*                     types added to this list
+*
+*  Authors: Nick McKendree
+*  Date
+*  October, 2024
+*****************************************************************************/
+#ifndef __IR_COMMS_PRODUCT_LIST_H_
+#define __IR_COMMS_PRODUCT_LIST_H_
+
+#define PRODUCT_LINE_SOFTWARE                        0x01
+#define PRODUCT_LINE_SOFTWARE_IR3_ACCESS_MGR         0x00
+#define PRODUCT_LINE_SOFTWARE_IR3_TABLET             0x01
+
+#define PRODUCT_LINE_NETWORKED                       0x02
+#define PRODUCT_LINE_NETWORKED_IR3_KAS               0x00
+#define PRODUCT_LINE_NETWORKED_INSIGHT_HUB           0x01
+
+#define PRODUCT_LINE_KEY                             0x03
+#define PRODUCT_LINE_KEY_IR3                         0x00
+#define PRODUCT_LINE_KEY_IR3_FIXTURE                 0x01
+#define PRODUCT_LINE_KEY_IR3_WIPER                   0x02
+#define PRODUCT_LINE_KEY_IR4_LORA_KEY                0x03
+#define PRODUCT_LINE_KEY_IR4_BATCH_KEY               0x04
+#define PRODUCT_LINE_KEY_IR4_WIFI_KEY                0x05
+#define PRODUCT_LINE_KEY_IR4_R&D_KEY                 0x06
+#define PRODUCT_LINE_KEY_IR4_MASTER_KEY              0x07
+#define PRODUCT_LINE_KEY_IR4_DETACHER                0x08
+
+#define PRODUCT_LINE_POD                             0x04    // Also referred to as Secure Display
+#define PRODUCT_LINE_POD_S1060_TYPE                  0x00
+#define PRODUCT_LINE_POD_S1560_TYPE                  0x01
+#define PRODUCT_LINE_POD_S1560V_TYPE                 0x02
+#define PRODUCT_LINE_POD_S960_TYPE                   0x03
+#define PRODUCT_LINE_POD_AOP_TYPE                    0x04
+#define PRODUCT_LINE_POD_SMART_SENSOR                0x05     // for S1060/S1560
+#define PRODUCT_LINE_POD_S2865_TYPE                  0x06
+#define PRODUCT_LINE_POD_BIC_PREMIUM_SENSOR_TYPE     0x07
+#define PRODUCT_LINE_POD_BIC_PREMIUM_ALARMING_STAND  0x08
+#define PRODUCT_LINE_POD_BIC_STANDARD_SENSOR_TYPE    0x09
+#define PRODUCT_LINE_POD_LAPTOP_AOP_TYPE             0x0A
+#define PRODUCT_LINE_POD_BIC_STANDARD_STAND          0x0B
+#define PRODUCT_LINE_POD_BIC_CAMERA_SENSOR           0x0C
+#define PRODUCT_LINE_POD_ONEPOD_WEARABLES_SENSOR     0x0D
+#define PRODUCT_LINE_POD_S960_GOLD_INSIGHT_SENSOR    0x0E
+#define PRODUCT_LINE_POD_DETACHER_TYPE               0x0F
+#define PRODUCT_LINE_POD_ONEPOD_TETHERLESS_SENSOR    0x10
+#define PRODUCT_LINE_POD_LIVE_ALARM_NODE             0x11
+#define PRODUCT_LINE_POD_LIVE_VERTICAL_STAND         0x12
+#define PRODUCT_LINE_POD_LIVE_ONEPOD_SENSOR          0x13
+#define PRODUCT_LINE_POD_F2300                       0x14
+#define PRODUCT_LINE_POD_UNIVERSAL_SENSOR            0x15
+#define PRODUCT_LINE_POD_UNIVERSAL_POWER_BOX         0x16
+#define PRODUCT_LINE_POD_S3200V                      0x17
+#define PRODUCT_LINE_POD_LITE                        0x18
+#define PRODUCT_LINE_POD_WS2                         0x60
+#define PRODUCT_LINE_POD_W2000_TYPE                  0x61
+#define PRODUCT_LINE_POD_SHOWCASE_SAFER_TYPE         0x70
+#define PRODUCT_LINE_POD_UNKNOWN                     0xFF
+
+#define PRODUCT_LINE_SMT_LOCK                        0x05
+#define PRODUCT_LINE_SMT_LOCK_L430                   0x0F
+#define PRODUCT_LINE_SMT_LOCK_L410                   0x10
+#define PRODUCT_LINE_SMT_LOCK_L440                   0x11
+#define PRODUCT_LINE_SMT_LOCK_L410_SNDR              0x12
+#define PRODUCT_LINE_SMT_LOCK_L440_SNDR              0x13
+#define PRODUCT_LINE_SMT_LOCK_HS80_IR                0x14
+#define PRODUCT_LINE_SMT_LOCK_L410_6_SECND           0x15
+#define PRODUCT_LINE_SMT_LOCK_PADLOCK_2_0            0x80
+#define PRODUCT_LINE_SMT_LOCK_RACK_LOCK              0x18
+#define PRODUCT_LINE_SMT_LOCK_LIVE_LOCK              0x1A
+#define PRODUCT_LINE_SMT_ONEKEY_LAPTOP_CLAMP         0x1B
+#define PRODUCT_LINE_SMT_SKELETON_KEY_LOCK           0x1C
+#define PRODUCT_LINE_SMT_PERFECT_POD                 0x1D // internally this is a lock, even though Marketing calls it a POD
+
+#define PRODUCT_LINE_CT                              0x06
+#define PRODUCT_LINE_CT_GANG_CHARGER                 0x00
+#define PRODUCT_LINE_CT_CT300_STAND                  0x01
+
+#define PRODUCT_LINE_SMT_LOCK2                       0x07
+#define PRODUCT_LINE_SMT_LOCK2_IR_DOOR               0x00
+
+#define PRODUCT_LINE_ZIPS                            0x08
+#define PRODUCT_LINE_ZIPS_MULTIPORT                  0x00
+#define PRODUCT_LINE_ZIPS_POWER                      0x01
+#define PRODUCT_LINE_ZIPS_3_0_ONE_PORT               0x02
+#define PRODUCT_LINE_ZIPS_3_0_FOUR_PORT              0x03
+#define PRODUCT_LINE_ZIPS_CONNECTED_ZIPS             0x04
+#define PRODUCT_LINE_ZIPS_QIPOD                      0x05
+#define PRODUCT_LINE_ZIPS_FRAGRANCE_TESTER           0x06
+
+#define PRODUCT_LINE_NFC_DEVICE                      0x11
+#define PRODUCT_LINE_NFC_DEVICE_PADLOCK              0x01
+
+#define PRODUCT_LINE_NXP_NFC_DEVICE                  0x12
+#define PRODUCT_LINE_NXP_NFC_LUXE_LOCK               0x00
+
+#define PRODUCT_LINE_PACKAGE_PROTECTION              0x13
+#define PRODUCT_LINE_PACKAGE_CORNER_PACKAGE_WRAP	 0x00
+
+/*******************************************************************************
+* BLOB INFORMATION
+*******************************************************************************/
+enum blob_id_enum
+{
+    BLOB_ID_CT300                       = 0x0001,
+    BLOB_ID_GANG_CHARGER_UNDOCKED_FRAME = 0x0002,
+    BLOB_ID_LAPTOP_AOP                  = 0x0003
+};
+#endif /* __IR_COMMS_PRODUCT_LIST_H_ */

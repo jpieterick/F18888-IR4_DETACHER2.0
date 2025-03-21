@@ -1,0 +1,6 @@
+../Drivers/CMSIS/Include/core_cm0plus.h:850:22:__NVIC_SetPriority	2
+../Drivers/CMSIS/Include/core_cm0plus.h:985:34:__NVIC_SystemReset	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_interrupts.c:9:6:hal_interrupts_enable	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_interrupts.c:14:6:hal_interrupts_disable	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_interrupts.c:19:6:hal_interrupts_reboot	0
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_interrupts.c:36:6:init_irq_priorities	2

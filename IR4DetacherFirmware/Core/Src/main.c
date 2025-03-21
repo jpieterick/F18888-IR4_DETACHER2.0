@@ -15,19 +15,43 @@
   *
   ******************************************************************************
   */
+
+/*******************************************************************************************
+ * InVue:
+ * This file was create by the hardware configuration tool in the STM32CubeIDE. It had been
+ * removed from the build using the Resource configurations menu that is accessed by right
+ * clicking on this files name in the Core/Src folder.
+ *
+ * the InVue main.c file resides in the Application/Src folder. It uses  functions from
+ * submod-hal_generic to call functions that interface with the STMicro HAL functions.
+ * THis is done in the hope that wrapping the HAL functions with the functions externed in
+ * folder submod-hal_generic/HAL_Generic will make it easier to port this code to a different
+ * processor should that become necessary.
+ *
+ *******************************************************************************************/ 
+  
+/**********************************
+ * File: main.c
+ * InVue Security Products
+ * Copyright 2025
+ **********************************/
+
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "adc.h"
 #include "i2c.h"
 #include "iwdg.h"
+#include "rtc.h"
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "hal_gpio.h"
+#include "hal_timer.h"
+#include "hal_watchdog.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -37,7 +61,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define LED_TIMEOUT_INTERVAL (500) // milliseconds
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -70,6 +94,8 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+	static uint32_t TickSinceLastExecution	= 0;
+	static uint32_t LastExecutionCount		= 0;
 
   /* USER CODE END 1 */
 
@@ -79,6 +105,26 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
+  #if 0
+	/* initialize flash buffer and systick */
+	hal_init();
+	// HAL_Init(); // TODO: decide which hal init function to use.
+
+	/* initialize the WDT */
+	// al_watchdog_init(); TODO: Enable the watch dog?
+
+	/* configure SYSCLK, AHB, APB1 and APB2 to 32MHz for the Murata module requirements */
+	SystemClock_Config();
+
+	/* configure part to prevent ESD reset events or other undesirable behavior */
+	hal_system_disable_reset_and_nmi_pins();
+
+	/* init GPIO */
+	hal_gpio_init();
+
+	/* reset the WDT */
+	// hal_watchdog_reset();
+ #endif
 
   /* USER CODE END Init */
 
@@ -86,7 +132,22 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
+  hal_gpio_init();
+  MX_I2C1_Init();
+  MX_USART1_UART_Init();
+  MX_ADC1_Init();
 
+	hal_timer_init();
+
+#if 0
+    // TODO: decide what to do with these initialization function call:   
+	hal_interrupts_enable();
+	
+    irkey_gl_init(UART_IR_DOT);     // initializes the IR key interface
+#endif
+
+#if 0
+	// Call initialization functions setup in the Device COnfiguration Tool.
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -97,7 +158,11 @@ int main(void)
   MX_TIM3_Init();
   MX_ADC1_Init();
   MX_IWDG_Init();
+  MX_RTC_Init();
+  MX_TIM15_Init();
   /* USER CODE BEGIN 2 */
+#endif
+  hal_watchdog_init(); // Initialize the the watch dog handle in submod-hal_generic
 
   /* USER CODE END 2 */
 
@@ -105,9 +170,23 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  /* reset the WDT */
+	  hal_watchdog_reset();
+
+      TickSinceLastExecution = hal_timer_get_ticks_since_count(LastExecutionCount);
+
+	  if (LED_TIMEOUT_INTERVAL <= TickSinceLastExecution)
+	  {
+		  // Toggle the LED
+		  LastExecutionCount = hal_timer_get_systick();
+		  hal_gpio_toggle_output(LED_GREEN);
+
+	  }
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	  hal_watchdog_reset();
   }
   /* USER CODE END 3 */
 }

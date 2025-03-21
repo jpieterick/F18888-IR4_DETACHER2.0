@@ -1,0 +1,16 @@
+../Drivers/CMSIS/Include/core_cm0plus.h:741:22:__NVIC_EnableIRQ	2
+../Drivers/CMSIS/Include/core_cm0plus.h:779:22:__NVIC_DisableIRQ	2
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_uart.c:70:6:hal_uartA_callback_init	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_uart.c:77:6:hal_uartB_callback_init	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_uart.c:93:6:hal_uart_init	6
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_uart.c:219:6:hal_uart_deinit	7
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_uart.c:286:6:hal_uart_enable_tx	6
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_uart.c:311:6:hal_uart_disable_tx	3
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_uart.c:325:6:hal_uart_enable_rx	3
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_uart.c:339:6:hal_uart_disable_rx	3
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_uart.c:353:9:hal_uart_read_byte	3
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_uart.c:369:6:hal_uart_send_byte	7
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_uart.c:397:6:hal_uart_is_waiting_for_transmit_complete	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_uart.c:402:13:uart_irq_handler	25
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_uart.c:591:6:USART1_IRQHandler	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_uart.c:597:6:USART2_IRQHandler	1

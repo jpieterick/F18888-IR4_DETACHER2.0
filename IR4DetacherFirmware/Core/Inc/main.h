@@ -32,6 +32,8 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+#include "periphdefs.h"
+
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -59,6 +61,12 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define BASE_BUTTON_Pin GPIO_PIN_13
 #define BASE_BUTTON_GPIO_Port GPIOC
+#define VBOOST_FDBK_Pin GPIO_PIN_0
+#define VBOOST_FDBK_GPIO_Port GPIOA
+#define VBOOST_CAL_PWM_Pin GPIO_PIN_1
+#define VBOOST_CAL_PWM_GPIO_Port GPIOA
+#define VBOOST_ENABLE_Pin GPIO_PIN_2
+#define VBOOST_ENABLE_GPIO_Port GPIOA
 #define LED_RED_Pin GPIO_PIN_3
 #define LED_RED_GPIO_Port GPIOA
 #define LED_YELLOW_Pin GPIO_PIN_4

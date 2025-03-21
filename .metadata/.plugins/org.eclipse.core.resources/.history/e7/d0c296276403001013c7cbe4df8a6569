@@ -1,0 +1,54 @@
+/**********************************
+ * File: pindefs.c
+ * InVue Security Products
+ * Copyright 2022
+ **********************************/
+
+#include "pindefs.h"
+
+#include "stm32g070xx.h"
+#include "stm32g0xx.h"
+
+
+
+// pin_config_t const pin_defs[NUM_PINS] =  // making this unconst so we can modify it at runtime if we're running on the nucleo board
+pin_config_t const pin_defs[NUM_PINS] =
+{
+		// 	Pin			Mode					Pull			Speed			   Alternate
+  {		GPIO_PIN_8,  GPIO_MODE_OUTPUT_PP,    GPIO_NOPULL,    GPIO_SPEED_FREQ_LOW,  	0u}, 	//BASE_BUTTON,
+  //LED_RED,
+  //LED_YELLOW,
+  //LED_GREEN,
+  //WPT_PWM,
+  //NFC_VOUT_SENSE,
+  //PIEZO_PWM,
+  //IR_UART_TX,
+  //IR_UART_RX,
+  //NFC_POWER_ENABLE,
+  //NFC_FD_INT,
+  //NFC_I2C_SCL,
+  //NFC_I2C_SDA,
+
+};
+
+
+//pin_port_t* const port_defs[NUM_PINS] =  // making this unconst so we can modify it at runtime if we're running on the nucleo board
+pin_port_t* const port_defs[NUM_PINS] =
+{
+ //BASE_BUTTON,
+ //LED_RED,
+ //LED_YELLOW,
+ //LED_GREEN,
+ //WPT_PWM,
+ //NFC_VOUT_SENSE,
+ //PIEZO_PWM,
+ //IR_UART_TX,
+ //IR_UART_RX,
+ //NFC_POWER_ENABLE,
+ //NFC_FD_INT,
+ //NFC_I2C_SCL,
+ //NFC_I2C_SDA,
+};
+
+
+

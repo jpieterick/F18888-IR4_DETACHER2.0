@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Delete resource &apos;IR4DetacherFirmware/SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/SystemClock.c&apos;" deleteContents="false" description="Delete resource &apos;IR4DetacherFirmware/SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/SystemClock.c&apos;" element1="/IR4DetacherFirmware/SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/SystemClock.c" flags="7" id="org.eclipse.ltk.core.refactoring.delete.resources" resources="1" stamp="1741982828790"/>
+</session>
