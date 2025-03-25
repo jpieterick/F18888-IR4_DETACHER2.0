@@ -1,9 +1,15 @@
 [submodule "IR4DetacherFirmware/SubModules/submod-hal_generic"]
 	path = IR4DetacherFirmware/SubModules/submod-hal_generic
 	url = https://github.com/invuefirmware/submod-hal_generic
-[submodule "IR4DetacherFirmware/Submodules/submod-ir_comms"]
-	path = IR4DetacherFirmware/Submodules/submod-ir_comms
+[submodule "IR4DetacherFirmware/SubModules/submod-ir_comms"]
+	path = IR4DetacherFirmware/SubModules/submod-ir_comms
 	url = https://github.com/invuefirmware/submod-ir_comms
-[submodule "IR4DetacherFirmware/Submodules/submod-cyclic_fifo_queue"]
-	path = IR4DetacherFirmware/Submodules/submod-cyclic_fifo_queue
+[submodule "IR4DetacherFirmware/SubModules/submod-cyclic_fifo_queue"]
+	path = IR4DetacherFirmware/SubModules/submod-cyclic_fifo_queue
 	url = https://github.com/invuefirmware/submod-cyclic_fifo_queue
+[submodule "IR4DetacherFirmware/SubModules/submod-common_mKEY_Comms"]
+	path = IR4DetacherFirmware/SubModules/submod-common_mKEY_Comms
+	url = https://github.com/invuefirmware/submod-common_mKEY_Comms
+[submodule "IR4DetacherFirmware/SubModules/submod-NTAG_NFC"]
+	path = IR4DetacherFirmware/SubModules/submod-NTAG_NFC
+	url = https://github.com/invuefirmware/submod-NTAG_NFC

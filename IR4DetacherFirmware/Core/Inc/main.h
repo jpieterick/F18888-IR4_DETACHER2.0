@@ -59,7 +59,9 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define BASE_BUTTON_Pin GPIO_PIN_13
+#define USER_BUTTON_Pin GPIO_PIN_13
+#define USER_BUTTON_GPIO_Port GPIOC
+#define BASE_BUTTON_Pin GPIO_PIN_14
 #define BASE_BUTTON_GPIO_Port GPIOC
 #define VBOOST_FDBK_Pin GPIO_PIN_0
 #define VBOOST_FDBK_GPIO_Port GPIOA
@@ -83,6 +85,8 @@ void Error_Handler(void);
 #define IR_UART_TX_GPIO_Port GPIOA
 #define IR_UART_RX_Pin GPIO_PIN_10
 #define IR_UART_RX_GPIO_Port GPIOA
+#define BATTERY_ENABLE_Pin GPIO_PIN_15
+#define BATTERY_ENABLE_GPIO_Port GPIOA
 #define NFC_POWER_ENABLE_Pin GPIO_PIN_6
 #define NFC_POWER_ENABLE_GPIO_Port GPIOB
 #define NFC_FD_INT_Pin GPIO_PIN_7

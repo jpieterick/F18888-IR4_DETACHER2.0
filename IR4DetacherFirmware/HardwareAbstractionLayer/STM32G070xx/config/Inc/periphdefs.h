@@ -35,7 +35,8 @@ void MX_TIM1_Init(void);
 #include "iwdg.h"
 #endif
 
-#define USE_HAL_TIMER (1)
+#define USE_HAL_TIMER
+//#define USE_HAL_RTC
 
 /* define the system clock frequencies as setup in hal_System.c */
 #define FREQ_LPO_HZ     (37000UL)

@@ -6,8 +6,12 @@
 		<item key="wholeword" value="false"/>
 		<item key="incremental" value="false"/>
 		<item key="isRegEx" value="false"/>
-		<item key="selection" value="LastExecutionCount"/>
+		<item key="selection" value="DeInit"/>
 		<list key="findhistory">
+			<item value="deinit"/>
+			<item value="rtc"/>
+			<item value="rtc_handle"/>
+			<item value="hrtc.Init."/>
 			<item value="LastTickCount"/>
 			<item value="TickSinceLastLoop"/>
 			<item value=","/>
@@ -21,6 +25,8 @@
 			<item value="&#x09;&#x09;"/>
 		</list>
 		<list key="replacehistory">
+			<item value="hrtc"/>
+			<item value="rtc_defs."/>
 			<item value="LastExecutionCount"/>
 			<item value="TickSinceLastExecution"/>
 			<item value="Last"/>

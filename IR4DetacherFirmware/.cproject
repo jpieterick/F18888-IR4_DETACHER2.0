@@ -49,6 +49,7 @@
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.includepaths.245072557" name="Include paths (-I)" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.includepaths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="../Core/Inc"/>
+									<listOptionValue builtIn="false" value="../Application/Inc"/>
 									<listOptionValue builtIn="false" value="../Drivers/STM32G0xx_HAL_Driver/Inc"/>
 									<listOptionValue builtIn="false" value="../Drivers/STM32G0xx_HAL_Driver/Inc/Legacy"/>
 									<listOptionValue builtIn="false" value="../Drivers/CMSIS/Device/ST/STM32G0xx/Include"/>
@@ -84,12 +85,12 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Application/Src"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Core"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
 						<entry excluding="config/Src" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="HardwareAbstractionLayer/STM32G070xx"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="HardwareAbstractionLayer/STM32G070xx/config/Src"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="SubModules/submod-hal_generic/HAL_Generic"/>
-						<entry excluding="drivers/spi_driver.c|drivers/i2c_driver.c|drivers/cec_driver.c|SystemClock.c" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="SubModules/submod-ir_comms"/>
 					</sourceEntries>
 				</configuration>
@@ -178,6 +179,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Core"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
 						<entry excluding="HAL_ST/src/STM32G0xxSTM32Cube/drivers/spi_driver.c|HAL_ST/src/STM32G0xxSTM32Cube/drivers/i2c_driver.c|HAL_ST/src/STM32G0xxSTM32Cube/drivers/cec_driver.c|HAL_ST/src/STM32G0xxSTM32Cube/SystemClock.c|HAL_ST/src/STM32WLEx|HAL_ST/src/STM32L0xx|HAL_ST/src/STM32G0xx|HAL_Silabs|HAL_GD32" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="SubModules/submod-hal_generic"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="SubModules/submod-ir_comms"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

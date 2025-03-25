@@ -42,7 +42,6 @@
 #include "adc.h"
 #include "i2c.h"
 #include "iwdg.h"
-#include "rtc.h"
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
@@ -61,7 +60,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define LED_TIMEOUT_INTERVAL (500) // milliseconds
+#define LED_TIMEOUT_INTERVAL (100) // milliseconds
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -96,6 +95,9 @@ int main(void)
   /* USER CODE BEGIN 1 */
 	static uint32_t TickSinceLastExecution	= 0;
 	static uint32_t LastExecutionCount		= 0;
+
+	static bool Authorized        = false;
+	static bool ValidSdcIsPresent = false;
 
   /* USER CODE END 1 */
 
@@ -132,10 +134,13 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-  hal_gpio_init();
-  MX_I2C1_Init();
-  MX_USART1_UART_Init();
-  MX_ADC1_Init();
+	hal_gpio_init();
+
+	MX_I2C1_Init();
+
+	MX_USART1_UART_Init();
+
+	MX_ADC1_Init();
 
 	hal_timer_init();
 
@@ -158,7 +163,6 @@ int main(void)
   MX_TIM3_Init();
   MX_ADC1_Init();
   MX_IWDG_Init();
-  MX_RTC_Init();
   MX_TIM15_Init();
   /* USER CODE BEGIN 2 */
 #endif
@@ -168,6 +172,8 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+
+  // Turn on the red LED to indicate that we have power but we are not authorized.
   while (1)
   {
 	  /* reset the WDT */
@@ -177,9 +183,23 @@ int main(void)
 
 	  if (LED_TIMEOUT_INTERVAL <= TickSinceLastExecution)
 	  {
-		  // Toggle the LED
-		  LastExecutionCount = hal_timer_get_systick();
-		  hal_gpio_toggle_output(LED_GREEN);
+		  // Check for NFC activity
+
+		  // Check for IR input activity
+
+		  while ((true == Authorized) && (true == ValidSdcIsPresent))
+		  {
+			  /* reset the WDT */
+			  hal_watchdog_reset();
+
+			  // Debounce and check button input
+
+			  // Handle IR key output activity
+#if 0
+			  Authorized = CheckAuthorizationState();
+#endif
+		  }
+
 
 	  }
 

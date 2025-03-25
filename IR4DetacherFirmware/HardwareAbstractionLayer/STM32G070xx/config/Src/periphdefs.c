@@ -30,20 +30,6 @@ irq_config_t irq_priorities[NUM_PRIORITIZED_IRQS] =
 		{USART3_4_IRQn, 	NVIC_PRIORITY_MID_LOW},        // LORA_Dongle
 };
 
-#if (USE_HAL_RTC == 1)
-const RTC_InitTypeDef rtc_defs =
-{
-	.HourFormat = RTC_HOURFORMAT_24,
-	.AsynchPrediv = 127,
-	.SynchPrediv = 255.
-	.OutPut = RTC_OUTPUT_DISABLE,
-	.OutPutRemap = RTC_OUTPUT_REMAP_NONE,
-	.OutPutPolarity = RTC_OUTPUT_POLARITY_HIGH,
-	.OutPutType = RTC_OUTPUT_TYPE_OPENDRAIN,
-	.OutPutPullUp = RTC_OUTPUT_PULLUP_NONE,
-};
-#endif
-
 __attribute__((weak))void MX_TIM1_Init(void)
 {
 
