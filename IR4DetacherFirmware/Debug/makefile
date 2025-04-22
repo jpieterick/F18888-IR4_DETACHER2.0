@@ -12,12 +12,14 @@ RM := rm -rf
 -include SubModules/submod-ir_comms/subdir.mk
 -include SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/drivers/subdir.mk
 -include SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/subdir.mk
+-include SubModules/submod-flash_controller/subdir.mk
 -include HardwareAbstractionLayer/STM32G070xx/config/Src/subdir.mk
 -include HardwareAbstractionLayer/STM32G070xx/subdir.mk
 -include Drivers/STM32G0xx_HAL_Driver/Src/subdir.mk
 -include Core/Startup/subdir.mk
 -include Core/Src/subdir.mk
--include Application/Src/subdir.mk
+-include Application/WirelessPwrTransfer/Src/subdir.mk
+-include Application/NFC/Src/subdir.mk
 -include objects.mk
 
 ifneq ($(MAKECMDGOALS),clean)

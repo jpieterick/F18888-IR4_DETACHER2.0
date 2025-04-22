@@ -36,6 +36,13 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/HardwareAbstractionLayer/STM32G070xx/config/Inc}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/SubModules/submod-ir_comms}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/SubModules/submod-cyclic_fifo_queue}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/SubModules/submod-NTAG_NFC}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/SubModules/submod-flash_controller}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Application/IRComms/Inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Application/NFC/Inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Application/Piezo/Inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/SubModules/submod-audio}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Application/WirelessPwrTransfer/Inc}&quot;"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.assembler.input.340299416" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.assembler.input"/>
 							</tool>
@@ -49,16 +56,22 @@
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.includepaths.245072557" name="Include paths (-I)" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.includepaths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="../Core/Inc"/>
-									<listOptionValue builtIn="false" value="../Application/Inc"/>
 									<listOptionValue builtIn="false" value="../Drivers/STM32G0xx_HAL_Driver/Inc"/>
 									<listOptionValue builtIn="false" value="../Drivers/STM32G0xx_HAL_Driver/Inc/Legacy"/>
 									<listOptionValue builtIn="false" value="../Drivers/CMSIS/Device/ST/STM32G0xx/Include"/>
 									<listOptionValue builtIn="false" value="../Drivers/CMSIS/Include"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Application/IRComms/Inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Application/NFC/Inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Application/Piezo/Inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Application/WirelessPwrTransfer/Inc}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/SubModules/submod-hal_generic/HAL_Generic}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/SubModules/submod-hal_generic/HAL_Generic/drivers}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/HardwareAbstractionLayer/STM32G070xx/config/Inc}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/SubModules/submod-ir_comms}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/SubModules/submod-cyclic_fifo_queue}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/SubModules/submod-NTAG_NFC}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/SubModules/submod-flash_controller}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/SubModules/submod-audio}&quot;"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.1294586466" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
 							</tool>
@@ -85,13 +98,18 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Application/Src"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Core"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
-						<entry excluding="config/Src" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="HardwareAbstractionLayer/STM32G070xx"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="HardwareAbstractionLayer/STM32G070xx/config/Src"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube"/>
+						<entry excluding="config/Src" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="HardwareAbstractionLayer/STM32G070xx"/>
+						<entry excluding="DetacherDeviceIRComsHandler.c" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Application/IRComms/Src"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Application/WirelessPwrTransfer/Src"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Application/NFC/Src"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Core"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Application/Piezo/Src"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Application/WirelessPwrTransfer/Inc"/>
+						<entry excluding="flash_controller_unit_tests.c|windows_x86_executable_test.c|windows_x86" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="SubModules/submod-flash_controller"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="SubModules/submod-ir_comms"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -129,6 +147,13 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/HardwareAbstractionLayer/STM32G070xx/config/Inc}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/SubModules/submod-ir_comms}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/SubModules/submod-cyclic_fifo_queue}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/SubModules/submod-NTAG_NFC}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/SubModules/submod-flash_controller}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Application/IRComms/Inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Application/NFC/Inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Application/Piezo/Inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/SubModules/submod-audio}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Application/WirelessPwrTransfer/Inc}&quot;"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.assembler.input.626754750" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.assembler.input"/>
 							</tool>
@@ -150,6 +175,13 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/HardwareAbstractionLayer/STM32G070xx/config/Inc}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/SubModules/submod-ir_comms}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/SubModules/submod-cyclic_fifo_queue}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/SubModules/submod-NTAG_NFC}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/SubModules/submod-flash_controller}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Application/IRComms/Inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Application/NFC/Inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Application/Piezo/Inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/SubModules/submod-audio}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Application/WirelessPwrTransfer/Inc}&quot;"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.1645250384" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
 							</tool>
@@ -176,10 +208,16 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="HardwareAbstractionLayer/STM32G070xx/config/Src"/>
+						<entry excluding="HAL_Silabs|HAL_ST/src/STM32G0xxSTM32Cube/drivers/cec_driver.c|HAL_ST/src/STM32G0xx|HAL_ST/src/STM32G0xxSTM32Cube/drivers/spi_driver.c|HAL_ST/src/STM32WLEx|HAL_ST/src/STM32G0xxSTM32Cube/drivers/i2c_driver.c|HAL_GD32|HAL_ST/src/STM32G0xxSTM32Cube/SystemClock.c|HAL_ST/src/STM32L0xx" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="SubModules/submod-hal_generic"/>
+						<entry excluding="DetacherDeviceIRComsHandler.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Application/IRComms/Src"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Application/WirelessPwrTransfer/Src"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Application/NFC/Src"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Core"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
-						<entry excluding="HAL_ST/src/STM32G0xxSTM32Cube/drivers/spi_driver.c|HAL_ST/src/STM32G0xxSTM32Cube/drivers/i2c_driver.c|HAL_ST/src/STM32G0xxSTM32Cube/drivers/cec_driver.c|HAL_ST/src/STM32G0xxSTM32Cube/SystemClock.c|HAL_ST/src/STM32WLEx|HAL_ST/src/STM32L0xx|HAL_ST/src/STM32G0xx|HAL_Silabs|HAL_GD32" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="SubModules/submod-hal_generic"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Application/WirelessPwrTransfer/Inc"/>
+						<entry excluding="flash_controller_unit_tests.c|windows_x86_executable_test.c|windows_x86" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="SubModules/submod-flash_controller"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="SubModules/submod-ir_comms"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

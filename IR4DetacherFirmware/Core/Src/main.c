@@ -51,6 +51,8 @@
 #include "hal_gpio.h"
 #include "hal_timer.h"
 #include "hal_watchdog.h"
+#include "WptController.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -138,17 +140,17 @@ int main(void)
 
 	MX_I2C1_Init();
 
-	MX_USART1_UART_Init();
-
 	MX_ADC1_Init();
 
 	hal_timer_init();
+
+	WptControllerInit();
 
 #if 0
     // TODO: decide what to do with these initialization function call:   
 	hal_interrupts_enable();
 	
-    irkey_gl_init(UART_IR_DOT);     // initializes the IR key interface
+    IRKeyHandlerInit(UART_IR);     // initializes the IR key interface
 #endif
 
 #if 0
@@ -164,6 +166,8 @@ int main(void)
   MX_ADC1_Init();
   MX_IWDG_Init();
   MX_TIM15_Init();
+  MX_USART3_UART_Init();
+  MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
 #endif
   hal_watchdog_init(); // Initialize the the watch dog handle in submod-hal_generic
@@ -186,8 +190,8 @@ int main(void)
 		  // Check for NFC activity
 
 		  // Check for IR input activity
-
-		  while ((true == Authorized) && (true == ValidSdcIsPresent))
+#if 0
+		  if ((true == IRCommsDetacherIsAuthorized()) && (true == ValidSdcIsPresent))
 		  {
 			  /* reset the WDT */
 			  hal_watchdog_reset();
@@ -195,11 +199,9 @@ int main(void)
 			  // Debounce and check button input
 
 			  // Handle IR key output activity
-#if 0
-			  Authorized = CheckAuthorizationState();
-#endif
-		  }
 
+		  }
+#endif
 
 	  }
 

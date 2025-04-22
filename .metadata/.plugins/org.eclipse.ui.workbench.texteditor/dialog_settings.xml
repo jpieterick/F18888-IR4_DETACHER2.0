@@ -1,5 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <section name="Workbench">
+	<item key="hasShownOverlayPopupBefore" value="true"/>
+	<item key="replaceBarOpen" value="true"/>
+	<list key="searchhistory">
+		<item value="counts_per_50usec"/>
+		<item value="are_there_more_ir_bytes_to_send"/>
+		<item value="authoriz"/>
+		<item value="on_time"/>
+		<item value="PWM"/>
+		<item value="HAL_TIM_PWM_Start"/>
+		<item value="hal_uart_handle"/>
+		<item value="NFC_"/>
+		<item value="PERIPH_DEFS"/>
+	</list>
+	<list key="replacehistory">
+		<item value="hal_uart_handle_ptr"/>
+		<item value="DETACHER_IR_KEY_"/>
+		<item value="NFC_HANDLER"/>
+	</list>
 	<section name="org.eclipse.ui.texteditor.FindReplaceDialog">
 		<item key="wrap" value="true"/>
 		<item key="casesensitive" value="false"/>

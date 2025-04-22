@@ -17,17 +17,20 @@
 
 #define USING_STM32CUBEIDE (1)
 
+#define USE_UART_INDICES_IN_DRIVER_FUNCTION_CALLS (1)
+
 // Un-comment the following when defining the timer in the Hardware Configuration tool,
 // so that they get initialized by the hal_timer_init() function:
 #define USING_TIM1
 #define USING_TIM3
-//#define USING_TIM6
+#define USING_TIM6
 //#define USING_TIM7
 //#define USING_TIM14
 #define USING_TIM15
 //#define USING_TIM16
 //#define USING_TIM17
 
+#define UsingDeviceConfigurationTool
 
 void MX_TIM1_Init(void);
 
@@ -46,6 +49,12 @@ void MX_TIM1_Init(void);
 
 #define FREQ_BLOCKING_DELAY_TIMER 		(64000000UL)
 #define FREQ_BLOCKING_DELAY_TIMER_BATT  (8000000UL)
+
+// The Automatic Reload Register get set to the blocking delay period.
+#define BLOCKING_DELAY_PERIOD           (_blockingTimerclkFreq / _blockingTimerOutClkFreq)
+
+//
+#define BLOCKING_DELAY_PRESCALER        (SystemCoreClock / _blockingTimerclkFreq)
 
 /******************************************************************
  *                           IWDT
@@ -105,13 +114,13 @@ void MX_TIM1_Init(void);
 
 enum timer_id
 {
+	TIMER_PIEZO_PWM,
     TIMER_WPT_PWM,
+	TIMER_VBOOST_CAL_PWM,
     TIMER_BLOCKING_DELAY,
 	TIMER_COMMUNICATE_SHUTDOWN,
-
-    TIMER_LAST = TIMER_COMMUNICATE_SHUTDOWN
+	NUMBER_OF_TIMERS, // This member must follow the last timer
 };
-#define NUMBER_OF_TIMERS    (TIMER_LAST + 1U)
 
 enum timer_type
  {
@@ -140,6 +149,9 @@ enum timer_type
      TIMER_CH1,
      TIMER_CH2,
      TIMER_CH3,
+	 TIMER_CH4,
+	 TIMER_CH5,
+	 TIMER_CH6
  };
 
 #define DUMMY_TIMER ((void *)0)
@@ -181,25 +193,28 @@ enum adc_id
  *                           UART
  * ***************************************************************/
 #define USE_HAL_UART
-//#define USING_UART4
 
 #if defined USE_HAL_UART
 
-// Setup the #defines for the UART_BUSx constants. Note that #defines are being used instead of an enum
-// because these constants are used in #ifdef statements as well as to index into arrays.
-#define UART_BUSA      0
-//#define UART_BUSB      1
-//#define UART_BUSC      2
-//#define UART_BUSD      3
+void uart_driver_init_this_uart(uint8_t thisUartNumber);
 
-#ifdef UART_BUSD
-#define NUM_UART_BUSES 4
-#elif defined (UART_BUSC)
-#define NUM_UART_BUSES 3
-#elif defined (UART_BUSB)
-#define NUM_UART_BUSES 2
-#elif defined (UART_BUSA)
-#define NUM_UART_BUSES 1
+
+// Setup the #defines for the UART index constants. Note that #defines are being used instead of an enum
+// because these constants are used in #ifdef statements as well as to index into arrays. These index
+// constants must either be assigned in numerical order or the #ifdef below must be re-arranged.
+#define UART1INDX      0  // USART1
+//#define UART2INDX      1 // USART2
+//#define UART3INDX      2 // USART3
+//#define UART4INDX      3 // USART4
+
+#ifdef UART4INDX
+#define NUMBER_OF_UARTS 4
+#elif defined (UART3INDX)
+#define NUMBER_OF_UARTS 3
+#elif defined (UART2INDX)
+#define NUMBER_OF_UARTS 2
+#elif defined (UART1INDX)
+#define NUMBER_OF_UARTS 1
 #endif
 /*
 #define UART_IR_DOT (UART1ID)  // ir dot or daisy chaining
@@ -239,21 +254,20 @@ typedef void (*blocking_callback)(void);
 
 typedef struct
 {
-	USART_TypeDef* 		  uart_module;  	/* both LPUART and USARTS are this type */
-	module_type_t		    uart_type;
-	uart_mode_t			    uart_mode;
-  uint32_t       		  target_baud_bps;
-  uint32_t        	  module_clock_hz;
-  blocking_callback 	blocking_delay; /* assign a blocking delay callback if you want a delay after a Tx prior to re-enabling Rx (IR Key).  Otherwise set it to (void*)0 */
+	USART_TypeDef*		uart_module;
+	module_type_t		uart_type;
+	uart_mode_t			uart_mode;
+	uint32_t			target_baud_bps;
+	uint32_t			module_clock_hz;
+	blocking_callback	blocking_delay; /* assign a blocking delay callback if you want a delay after a Tx prior to re-enabling Rx (IR Key).  Otherwise set it to (void*)0 */
 } uart_hal_t;
 
 typedef struct
 {
-	uint8_t     uart_bus_num;
 	uart_hal_t  uart_hal;
 } uart_config_t;
 
-extern uart_config_t const uart_defs[NUM_UART_BUSES];
+extern uart_config_t const uart_defs[NUMBER_OF_UARTS];
 
 
 #endif
@@ -288,6 +302,10 @@ enum irqs_with_priority
 #define NUM_PRIORITIZED_IRQS (LAST_IRQ + 1U)
 
 extern irq_config_t irq_priorities[NUM_PRIORITIZED_IRQS];
+
+extern const uint32_t _blockingTimerclkFreq;
+
+extern const uint32_t _blockingTimerOutClkFreq;
 
 /******************************************************************/
 

@@ -18,8 +18,8 @@
 		<item key="scope" value="0"/>
 	</section>
 	<section name="DialogBounds_SearchDialog">
-		<item key="DIALOG_X_ORIGIN" value="687"/>
-		<item key="DIALOG_Y_ORIGIN" value="277"/>
+		<item key="DIALOG_X_ORIGIN" value="938"/>
+		<item key="DIALOG_Y_ORIGIN" value="263"/>
 		<item key="DIALOG_WIDTH" value="505"/>
 		<item key="DIALOG_HEIGHT" value="483"/>
 		<item key="DIALOG_FONT_NAME" value="1|Segoe UI|9.0|0|WINDOWS|1|-12|0|0|0|400|0|0|0|1|0|0|0|0|Segoe UI"/>
@@ -38,7 +38,7 @@
 			<item key="ignoreCase" value="true"/>
 			<item key="isRegExSearch" value="false"/>
 			<item key="isWholeWord" value="false"/>
-			<item key="textPattern" value="uart_indx"/>
+			<item key="textPattern" value="AHB"/>
 			<item key="scope" value="0"/>
 			<list key="fileNamePatterns">
 				<item value="*.*"/>
@@ -53,7 +53,7 @@
 			<item key="ignoreCase" value="true"/>
 			<item key="isRegExSearch" value="false"/>
 			<item key="isWholeWord" value="false"/>
-			<item key="textPattern" value="UART2INDX"/>
+			<item key="textPattern" value="HCLK"/>
 			<item key="scope" value="0"/>
 			<list key="fileNamePatterns">
 				<item value="*.*"/>
@@ -65,7 +65,7 @@
 			<item key="ignoreCase" value="true"/>
 			<item key="isRegExSearch" value="false"/>
 			<item key="isWholeWord" value="false"/>
-			<item key="textPattern" value="UART1INDX"/>
+			<item key="textPattern" value="stm32g070xx.h"/>
 			<item key="scope" value="0"/>
 			<list key="fileNamePatterns">
 				<item value="*.*"/>
@@ -77,7 +77,7 @@
 			<item key="ignoreCase" value="true"/>
 			<item key="isRegExSearch" value="false"/>
 			<item key="isWholeWord" value="false"/>
-			<item key="textPattern" value="NUMBER_OF_UARTS"/>
+			<item key="textPattern" value="system_stm32g0xx.h"/>
 			<item key="scope" value="0"/>
 			<list key="fileNamePatterns">
 				<item value="*.*"/>
@@ -89,7 +89,7 @@
 			<item key="ignoreCase" value="true"/>
 			<item key="isRegExSearch" value="false"/>
 			<item key="isWholeWord" value="false"/>
-			<item key="textPattern" value="UART_BUSA"/>
+			<item key="textPattern" value="SystemCoreClockUpdate"/>
 			<item key="scope" value="0"/>
 			<list key="fileNamePatterns">
 				<item value="*.*"/>
@@ -101,7 +101,7 @@
 			<item key="ignoreCase" value="true"/>
 			<item key="isRegExSearch" value="false"/>
 			<item key="isWholeWord" value="false"/>
-			<item key="textPattern" value="NUM_UART_BUSES"/>
+			<item key="textPattern" value="SYSCLK"/>
 			<item key="scope" value="0"/>
 			<list key="fileNamePatterns">
 				<item value="*.*"/>
@@ -113,7 +113,7 @@
 			<item key="ignoreCase" value="true"/>
 			<item key="isRegExSearch" value="false"/>
 			<item key="isWholeWord" value="false"/>
-			<item key="textPattern" value="rtc_defs"/>
+			<item key="textPattern" value="apb"/>
 			<item key="scope" value="0"/>
 			<list key="fileNamePatterns">
 				<item value="*.*"/>
@@ -125,7 +125,7 @@
 			<item key="ignoreCase" value="true"/>
 			<item key="isRegExSearch" value="false"/>
 			<item key="isWholeWord" value="false"/>
-			<item key="textPattern" value="rtc_handle"/>
+			<item key="textPattern" value="hal_timer_blocking_delay"/>
 			<item key="scope" value="0"/>
 			<list key="fileNamePatterns">
 				<item value="*.*"/>
@@ -137,7 +137,7 @@
 			<item key="ignoreCase" value="true"/>
 			<item key="isRegExSearch" value="false"/>
 			<item key="isWholeWord" value="false"/>
-			<item key="textPattern" value="hal_uartA_callback_init"/>
+			<item key="textPattern" value="hal_timer_blocking_delay_for_50us"/>
 			<item key="scope" value="0"/>
 			<list key="fileNamePatterns">
 				<item value="*.*"/>
@@ -149,7 +149,7 @@
 			<item key="ignoreCase" value="true"/>
 			<item key="isRegExSearch" value="false"/>
 			<item key="isWholeWord" value="false"/>
-			<item key="textPattern" value="usart1_byte_received_callback"/>
+			<item key="textPattern" value="hal_timer_set_timer_for_blocking_delays"/>
 			<item key="scope" value="0"/>
 			<list key="fileNamePatterns">
 				<item value="*.*"/>
@@ -161,7 +161,7 @@
 			<item key="ignoreCase" value="true"/>
 			<item key="isRegExSearch" value="false"/>
 			<item key="isWholeWord" value="false"/>
-			<item key="textPattern" value="HAL_UART_IRQHandler"/>
+			<item key="textPattern" value="hal_timer_interrupt_callback"/>
 			<item key="scope" value="0"/>
 			<list key="fileNamePatterns">
 				<item value="*.*"/>
@@ -173,7 +173,7 @@
 			<item key="ignoreCase" value="true"/>
 			<item key="isRegExSearch" value="false"/>
 			<item key="isWholeWord" value="false"/>
-			<item key="textPattern" value="USART1_IRQHandler"/>
+			<item key="textPattern" value="TIM_PWM"/>
 			<item key="scope" value="0"/>
 			<list key="fileNamePatterns">
 				<item value="*.*"/>
@@ -186,6 +186,9 @@
 		<item key="org.eclipse.search.resultpage.limit" value="1000"/>
 	</section>
 	<section name="org.eclipse.search.text.FileSearchResultPage">
+		<item key="org.eclipse.search.resultpage.limit" value="1000"/>
+	</section>
+	<section name="">
 		<item key="org.eclipse.search.resultpage.limit" value="1000"/>
 	</section>
 </section>

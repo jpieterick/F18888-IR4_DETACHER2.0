@@ -13,3 +13,9 @@
 [submodule "IR4DetacherFirmware/SubModules/submod-NTAG_NFC"]
 	path = IR4DetacherFirmware/SubModules/submod-NTAG_NFC
 	url = https://github.com/invuefirmware/submod-NTAG_NFC
+[submodule "IR4DetacherFirmware/Submodules/submod-flash_controller"]
+	path = IR4DetacherFirmware/Submodules/submod-flash_controller
+	url = https://github.com/invuefirmware/submod-flash_controller
+[submodule "IR4DetacherFirmware/Submodules/submod-audio"]
+	path = IR4DetacherFirmware/Submodules/submod-audio
+	url = https://github.com/invuefirmware/submod-audio

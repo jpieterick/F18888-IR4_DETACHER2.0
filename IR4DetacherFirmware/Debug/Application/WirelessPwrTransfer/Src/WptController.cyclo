@@ -1,0 +1,2 @@
+../Application/WirelessPwrTransfer/Src/WptController.c:24:6:WptControllerInit	1
+../Application/WirelessPwrTransfer/Src/WptController.c:29:6:WptSetCalibrationValue	1

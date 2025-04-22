@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename resource &apos;IR4DetacherFirmware/Application/WirelessPwrTransfer/WptController.c&apos; to &apos;Src&apos;" description="Rename resource &apos;WptController.c&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="Application/WirelessPwrTransfer/WptController.c" name="Src" stamp="1745334167446" updateReferences="true"/>
+</session>

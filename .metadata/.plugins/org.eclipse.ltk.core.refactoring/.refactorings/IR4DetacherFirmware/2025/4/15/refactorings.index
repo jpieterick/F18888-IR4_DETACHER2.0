@@ -1,0 +1,4 @@
+1744232513062	Move 'DetacherDeviceIRComsHandler.h' to 'Inc'
+1744232523143	Move 'DetacherDeviceIRComsHandler.c' to 'Src'
+1744232586345	Move 'NFC_Handler.c' to 'Src'
+1744232594491	Move 'NFC_Handler.h' to 'Inc'

@@ -22,12 +22,14 @@ C_DEPS :=
 
 # Every subdirectory with source files must be described here
 SUBDIRS := \
-Application/Src \
+Application/NFC/Src \
+Application/WirelessPwrTransfer/Src \
 Core/Src \
 Core/Startup \
 Drivers/STM32G0xx_HAL_Driver/Src \
 HardwareAbstractionLayer/STM32G070xx/config/Src \
 HardwareAbstractionLayer/STM32G070xx \
+SubModules/submod-flash_controller \
 SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/drivers \
 SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube \
 SubModules/submod-ir_comms \
