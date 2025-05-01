@@ -68,7 +68,7 @@ void MX_ADC1_Init(void)
 
   /** Configure Regular Channel
   */
-  sConfig.Channel = ADC_CHANNEL_0;
+  sConfig.Channel = ADC_CHANNEL_10;
   sConfig.Rank = ADC_REGULAR_RANK_1;
   sConfig.SamplingTime = ADC_SAMPLINGTIME_COMMON_1;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
@@ -97,12 +97,13 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* adcHandle)
     __HAL_RCC_GPIOB_CLK_ENABLE();
     /**ADC1 GPIO Configuration
     PA0     ------> ADC1_IN0
+    PA7     ------> ADC1_IN7
     PB2     ------> ADC1_IN10
     */
-    GPIO_InitStruct.Pin = VBOOST_FDBK_Pin;
+    GPIO_InitStruct.Pin = VBOOST_FDBK_Pin|VIN_MONITOR_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(VBOOST_FDBK_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
     GPIO_InitStruct.Pin = NFC_VOUT_SENSE_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
@@ -131,9 +132,10 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* adcHandle)
 
     /**ADC1 GPIO Configuration
     PA0     ------> ADC1_IN0
+    PA7     ------> ADC1_IN7
     PB2     ------> ADC1_IN10
     */
-    HAL_GPIO_DeInit(VBOOST_FDBK_GPIO_Port, VBOOST_FDBK_Pin);
+    HAL_GPIO_DeInit(GPIOA, VBOOST_FDBK_Pin|VIN_MONITOR_Pin);
 
     HAL_GPIO_DeInit(NFC_VOUT_SENSE_GPIO_Port, NFC_VOUT_SENSE_Pin);
 

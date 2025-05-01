@@ -9,11 +9,15 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stddef.h>
 #include "stm32g070xx.h"
+#include "pindefs.h"
 #if 0
 #include "scheduler_glue.h"
 #endif
 
+#define USE_RTT_FOR_DEBUGGING (1)
+#define DEBUG_DEBOUNCE (1)
 
 #define USING_STM32CUBEIDE (1)
 
@@ -41,20 +45,40 @@ void MX_TIM1_Init(void);
 #define USE_HAL_TIMER
 //#define USE_HAL_RTC
 
-/* define the system clock frequencies as setup in hal_System.c */
-#define FREQ_LPO_HZ     (37000UL)
-#define FREQ_SYSCLK  (64000000UL)
-#define FREQ_AHB_HZ  (FREQ_SYSCLK/1)			// According to SystemClock_64M_Config, this is div1 = 64M
-#define FREQ_APB1_HZ (FREQ_SYSCLK/1)			// According to SystemClock_64M_Config, this is div1 = 64M
+#define FREQ_SYSCLK  (54000000UL)
+#define FREQ_AHB_HZ  (FREQ_SYSCLK/1)			// AHB prescaler is set to /1 in the device configuration tool
+#define FREQ_APB1_HZ (FREQ_SYSCLK/1)			// APB prescaler is set to /1 in the device configuration tool
 
-#define FREQ_BLOCKING_DELAY_TIMER 		(64000000UL)
-#define FREQ_BLOCKING_DELAY_TIMER_BATT  (8000000UL)
+#define BLOCKING_TIMER_CLK_FREQ (FREQ_APB1_HZ)
+#define BLOCKING_TIMER_OUT_FREQ (1000000) // Setting this to 1mhz means that the ARR can be loaded with the requisite number of microseconds.
 
-// The Automatic Reload Register get set to the blocking delay period.
-#define BLOCKING_DELAY_PERIOD           (_blockingTimerclkFreq / _blockingTimerOutClkFreq)
+// Setup the blocking delay prescaler so that the time output frequency will be BLOCKING_TIMER_OUT_FREQ.
+#define BLOCKING_DELAY_PRESCALER        (BLOCKING_TIMER_CLK_FREQ / BLOCKING_TIMER_OUT_FREQ) - 1
 
-//
-#define BLOCKING_DELAY_PRESCALER        (SystemCoreClock / _blockingTimerclkFreq)
+#define VBOOST_CAL_PWM_FREQ (54000)
+#define VBOOST_ARR_VAL (100-1) // We want ARR to be 100-1 so that we can just enter the desired pwm duty cycle % into the channel capture and compare register
+#define VBOOST_TIMER_FREQ (VBOOST_CAL_PWM_FREQ*(VBOOST_ARR_VAL+1))
+
+#define VBOOST_PRESCALER ((FREQ_APB1_HZ/VBOOST_TIMER_FREQ) -1)
+
+
+// Setup the piezo PWM timer values.
+
+
+// Setup the wireless power transfer pwm. We want as 135Khz pwm frequency
+#define WPT_PWM_TIMER_FREQ (13500000)
+#define WPT_PWM_FREQ (135000)
+#define WPT_PWM_PRESCALER ((FREQ_APB1_HZ/WPT_PWM_TIMER_FREQ) -1)
+#define WPT_PWM_ARR_VAL ((WPT_PWM_TIMER_FREQ / WPT_PWM_FREQ) -1)
+
+
+#define PIEZO_TIMER_CLOCK_FREQUENCY  FREQ_APB1_HZ
+#define PIEZO_PWM_TIMER_OUT_FREQ     (1000000)
+#define PIEZO_PWM_PRESCALER ((FREQ_APB1_HZ/VBOOST_TIMER_FREQ) -1)
+
+#define PWM_TIMER_HZ_TO_PERIOD_COUNTS(desired_freq, prescale)  ((PIEZO_TIMER_CLOCK_FREQUENCY / prescale / desired_freq) + 1 /*+1 to top per ref manual*/)
+#define PWM_TIMER_DUTYCYCLE_TO_COUNTS(timerTop, dutyCycle/*percent as int (50%=50)*/)  	((uint16_t)((((uint32_t)timerTop+1/*+1 to top per ref manual*/) * dutyCycle / 100)))
+
 
 /******************************************************************
  *                           IWDT
@@ -63,22 +87,24 @@ void MX_TIM1_Init(void);
 #define WDT_TIMEOUT_MSECS          (5000U)
 #define MAX_WATCHDOG_TIMEOUT_MSECS (28332)
 
-
+#define FLASH_SECTOR_SIZE		( 2 * 1024 ) //
+#define FLASH_MIN_WRITE_BYTES	8	// DOUBLE WORD
 
 /******************************************************************
  *                           Timers
  * ***************************************************************/
-
+#define USING_BLOCKING_DELAY_TIMER (1)
 #define PWM_AUDIO_CLOCK_FREQUENCY_HZ     64000000.0
 #define PWM_AUDIO_HZ_TO_PERIOD_COUNTS(f) ((uint16_t)(PWM_AUDIO_CLOCK_FREQUENCY_HZ / f))
 
+#ifdef USING_BLOCKING_DELAY_TIMER
 #define BLOCKING_DELAY_OVERHEAD_COMPENSATION_PERIOD_COUNTS_FULLSPEED  	0.0 	// tuned empirically
 #define BLOCKING_DELAY_OVERHEAD_COMPENSATION_PERIOD_COUNTS_LOWPOWER  	0.0 	//
 
 #define BLOCKING_DELAY_US_TO_COUNTS_W_64M_CLK(t) ((uint16_t)((t * (FREQ_BLOCKING_DELAY_TIMER / 1000000.0)) - BLOCKING_DELAY_OVERHEAD_COMPENSATION_PERIOD_COUNTS_FULLSPEED))
 #define BLOCKING_DELAY_US_TO_COUNTS_W_8M_CLK(t) ((uint16_t)((t * (FREQ_BLOCKING_DELAY_TIMER_BATT / 1000000.0)) - BLOCKING_DELAY_OVERHEAD_COMPENSATION_PERIOD_COUNTS_LOWPOWER))
 #define BLOCKING_DELAY_US_TO_PERIOD_COUNTS(t) (schglue_GetCurrentClockSpeed() == _64Mhz ? BLOCKING_DELAY_US_TO_COUNTS_W_64M_CLK(t) : BLOCKING_DELAY_US_TO_COUNTS_W_8M_CLK(t))
-
+#endif // USING_BLOCKING_DELAY_TIMER
 
 // Note: SysTick is driven by HCLK/8.  HCLK is 64MHz.  Our scheduler interrupt 
 // api takes a uint16_t number of counts as input.  So  
@@ -118,7 +144,8 @@ enum timer_id
     TIMER_WPT_PWM,
 	TIMER_VBOOST_CAL_PWM,
     TIMER_BLOCKING_DELAY,
-	TIMER_COMMUNICATE_SHUTDOWN,
+	// TODO: decide if the communication shutdown timer is needed.
+	//TIMER_COMMUNICATE_SHUTDOWN,
 	NUMBER_OF_TIMERS, // This member must follow the last timer
 };
 
@@ -151,26 +178,37 @@ enum timer_type
      TIMER_CH3,
 	 TIMER_CH4,
 	 TIMER_CH5,
-	 TIMER_CH6
+	 TIMER_CH6,
+	 NumTimerChannels // This member must always be last,
  };
 
-#define DUMMY_TIMER ((void *)0)
+#define NOT_USING_HW_PIN			UINT32_MAX
+
+#define DUMMY_TIMER NULL //((void *)0)
 // timer could be of type TPM_Type* or LPTMR_Type*
 // Ex. (timer = TPM1 or timer = LPTMR0)
 typedef struct timer_config
 {
-    void*               timer;  // Can be set to DUMMY_TIMER for unimplemented timers
+	TIM_TypeDef*        timer;  // Can be set to DUMMY_TIMER for unimplemented timers
     enum timer_type     type;
     enum timer_channel  channel;
-    uint8_t             prescale_powers_of_2;
+    //uint8_t             prescale_powers_of_2; // Only used when the prescaler for you processor is a single bit shifted left by a power of 2.
+    uint16_t		    prescaler_16b;  // for when the processor uses a 16 bit value as a prescaler.
     void(*timer_irq_cb)(uint16_t);
+    uint32_t				pin_id;
 }timer_config_t;
 
-extern timer_config_t const timer_defs[NUMBER_OF_TIMERS];
+extern timer_config_t timer_defs[NUMBER_OF_TIMERS];
+extern const uint16_t TimerArrValue[NUMBER_OF_TIMERS];
 
 /******************************************************************************
  * ANALOG TO DIGITAL CONVERSIONS *********************************************/
 #define USE_HAL_ADC
+
+#define MCU_DEFAULT_VDD_MV						3000
+#define INTERNAL_ADC_REF_VOLTAGE_MV				1210
+#define ADC_RESOLUTION_BITS						12
+#define ADC_RESOLUTION							(( 1 << ADC_RESOLUTION_BITS ) - 1)
 
 enum adc_id
 {
@@ -203,7 +241,7 @@ void uart_driver_init_this_uart(uint8_t thisUartNumber);
 // because these constants are used in #ifdef statements as well as to index into arrays. These index
 // constants must either be assigned in numerical order or the #ifdef below must be re-arranged.
 #define UART1INDX      0  // USART1
-//#define UART2INDX      1 // USART2
+#define UART2INDX      1 // USART2
 //#define UART3INDX      2 // USART3
 //#define UART4INDX      3 // USART4
 
@@ -216,6 +254,18 @@ void uart_driver_init_this_uart(uint8_t thisUartNumber);
 #elif defined (UART1INDX)
 #define NUMBER_OF_UARTS 1
 #endif
+
+#define USING_UART1
+
+#define IR_COMM_UART  (UART1INDX)
+
+//#define USING_UART2
+
+#define USING_UART3
+
+
+//#define USING_UART4
+
 /*
 #define UART_IR_DOT (UART1ID)  // ir dot or daisy chaining
 #define UART_POWER (UART2ID)   // micro usb power
@@ -255,6 +305,7 @@ typedef void (*blocking_callback)(void);
 typedef struct
 {
 	USART_TypeDef*		uart_module;
+	void(*uart_init)(void);
 	module_type_t		uart_type;
 	uart_mode_t			uart_mode;
 	uint32_t			target_baud_bps;
@@ -302,10 +353,6 @@ enum irqs_with_priority
 #define NUM_PRIORITIZED_IRQS (LAST_IRQ + 1U)
 
 extern irq_config_t irq_priorities[NUM_PRIORITIZED_IRQS];
-
-extern const uint32_t _blockingTimerclkFreq;
-
-extern const uint32_t _blockingTimerOutClkFreq;
 
 /******************************************************************/
 

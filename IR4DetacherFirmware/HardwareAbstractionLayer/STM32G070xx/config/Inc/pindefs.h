@@ -15,7 +15,7 @@
 // Pin Definition Enum.  MUST maintain same order as pin_defs[].
 typedef enum pin_id
 {
-	BASE_BUTTON,
+	USER_BUTTON,
 	LED_RED,
 	LED_YELLOW,
 	LED_GREEN,
@@ -28,6 +28,7 @@ typedef enum pin_id
 	NFC_FD_INT,
 	NFC_I2C_SCL,
 	NFC_I2C_SDA,
+	VBOOST_CAL_PWM,
 	NUM_PINS
 }pin_id_t;
 
@@ -39,18 +40,8 @@ typedef enum
     IO_INTERRUPT_RISING_AND_FALLING_EDGES
 }gpio_interrupt_config;
 
-#if defined(USING_STM32CUBEIDE)
 
-typedef struct
-{
-  uint32_t Pin;        /*!< Specifies the GPIO pins to be configured.
-                           This parameter can be any value of @ref GPIO_pins */
-
-} pin_config_t;
-
-#else
 typedef GPIO_InitTypeDef pin_config_t;
-#endif
 
 typedef GPIO_TypeDef pin_port_t;
 

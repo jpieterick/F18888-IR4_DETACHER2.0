@@ -16,3 +16,6 @@
 [submodule "IR4DetacherFirmware/Submodules/submod-flash_controller"]
 	path = IR4DetacherFirmware/Submodules/submod-flash_controller
 	url = https://github.com/invuefirmware/submod-flash_controller
+[submodule "IR4DetacherFirmware/SubModules/submod_segger-RTT-debugging"]
+	path = IR4DetacherFirmware/SubModules/submod_segger-RTT-debugging
+	url = https://github.com/invuefirmware/submod_segger-RTT-debugging.git

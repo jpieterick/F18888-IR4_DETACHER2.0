@@ -58,6 +58,7 @@
 extern ADC_HandleTypeDef hadc1;
 extern TIM_HandleTypeDef htim6;
 extern UART_HandleTypeDef huart1;
+extern UART_HandleTypeDef huart3;
 /* USER CODE BEGIN EV */
 
 /* USER CODE END EV */
@@ -143,20 +144,6 @@ void SysTick_Handler(void)
 /******************************************************************************/
 
 /**
-  * @brief This function handles EXTI line 4 to 15 interrupts.
-  */
-void EXTI4_15_IRQHandler(void)
-{
-  /* USER CODE BEGIN EXTI4_15_IRQn 0 */
-
-  /* USER CODE END EXTI4_15_IRQn 0 */
-  HAL_GPIO_EXTI_IRQHandler(NFC_FD_INT_Pin);
-  /* USER CODE BEGIN EXTI4_15_IRQn 1 */
-
-  /* USER CODE END EXTI4_15_IRQn 1 */
-}
-
-/**
   * @brief This function handles ADC1 interrupt.
   */
 void ADC1_IRQHandler(void)
@@ -197,6 +184,20 @@ void USART1_IRQHandler(void)
   /* USER CODE BEGIN USART1_IRQn 1 */
 #endif
   /* USER CODE END USART1_IRQn 1 */
+}
+
+/**
+  * @brief This function handles USART3 and USART4 interrupts.
+  */
+void USART3_4_IRQHandler(void)
+{
+  /* USER CODE BEGIN USART3_4_IRQn 0 */
+
+  /* USER CODE END USART3_4_IRQn 0 */
+  HAL_UART_IRQHandler(&huart3);
+  /* USER CODE BEGIN USART3_4_IRQn 1 */
+
+  /* USER CODE END USART3_4_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */

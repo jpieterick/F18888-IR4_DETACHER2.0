@@ -1,0 +1,179 @@
+/** @file rtt_debug.c
+ *  @brief Simple wrapper for Segger RTT library
+ *
+ *  @details
+ *  To Use:
+ *  Include SEGGER_RTT.c, SEGGER_RTT.h, SEGGER_RTT_printf.c, SEGGER_RTT_Conf.h, and debug.c/.h in your project or makefile.
+ *  In the build system of choice, add USE_RTT_FOR_DEBUGGING=1
+ *  Add init_rtt_for_debug to main.
+ *    Add a log level to control data, DBG_LVL_DEBUG or DBG_LVL_ALL sends everything
+ *    Add a function pointer to get a millisecond time value for log strings. If not provided (NULL) then 0 is always printed.
+ *  Use debug_rtt_printf or debug_rtt_printf_ext directly or use the macros mLog_DEBUG, mLog_INFO, or mLog_ERROR.
+ *    When using the macro's, due to expansion, they need double parentheses like: mLog_DEBUG(("Hello\r\n"));
+
+ *  If USE_RTT_FOR_DEBUGGING is not defined or is set to 0, the functions can be left in the code. They will be built as empty functions and likely optimized out.
+ *
+ *  Assumptions mode:
+ *
+ *
+ *  @author Nick M
+ *  @bug No known bugs.
+ *
+ *  InVue Security Products
+ *  Copyright 2022
+ */
+
+/***************************************************************************
+INCLUDES
+****************************************************************************/
+#include <stdint.h>
+#include <limits.h>
+#include <stdbool.h>
+#include <stdarg.h>
+#include "SEGGER_RTT.h"
+#include "rtt_debug.h"
+
+/****************************************************************************
+                            DEFINES
+****************************************************************************/
+
+/****************************************************************************
+                            GLOBAL VARIABLES
+****************************************************************************/
+#if (1 == USE_RTT_FOR_DEBUGGING )
+static _eDBG_LVL dgbLevel = DBG_LVL_ALL;
+uint32_t (*logging_get_msec)(void) = NULL;
+const char *logMsg[] = {"ERROR", "INFO ", "DEBUG", "NONE " };
+#endif
+
+/****************************************************************************
+                            FUNCTION PROTOTYPES
+****************************************************************************/
+
+/****************************************************************************
+                            CODE
+****************************************************************************/
+
+/** @brief init_rtt_for_debug
+ *  @details Init wrapper for RTT
+ *  @param[in] _eDBG_LVL level: Log level
+ *  @param[in] uint32_t(*get_msec_counter)(void): Function pointer for time
+ *  @return void
+ */
+void init_rtt_for_debug(_eDBG_LVL level, uint32_t(*get_msec_counter)(void) )
+{
+#if (1 == USE_RTT_FOR_DEBUGGING )
+#warning "Building with RTT"
+	/* configure buffer 0, whose RAM is allocated at compile time.
+	 * Use SEGGER_RTT_MODE_NO_BLOCK_SKIP so we do not block on full buffers.
+	 */
+	SEGGER_RTT_ConfigUpBuffer(0, NULL, NULL, 0, SEGGER_RTT_MODE_NO_BLOCK_SKIP);
+	dgbLevel = level;
+	logging_get_msec = get_msec_counter;
+#else
+	(void)get_msec_counter;
+	(void)level;
+#endif
+}
+
+/** @brief change_rtt_debug_level
+ *  @details Change the log level
+ *  @param[in] _eDBG_LVL level: Log level
+ *  @return void
+ */
+void change_rtt_debug_level(_eDBG_LVL level )
+{
+#if (1 == USE_RTT_FOR_DEBUGGING )
+  dgbLevel = level;
+#else
+	(void)level;
+#endif
+}
+
+/** @brief debug_rtt_printf_ext
+ *  @details Extension of the printf wrapper. Adds function nmae, line number to standard function.
+ *          For line and function name macro's (__LINE__ and __FUNCTION__), this needs to be called from
+ *          the included macro's in the H file.
+ *  @param[in] _eDBG_LVL level: Log level
+ *  @param[in] const char *function: Function name of call (typically used with __FUNCTION__)
+ *  @param[in] uint32_t line: Line number of call (typically used with __LINE__)
+ *  @param[in] const char * pcFormat = string for parsing variable argument
+ *  @param[in] ...  = variable argument expansion
+ *  @return void
+ */
+void debug_rtt_printf_ext(_eDBG_LVL level, const char *function, uint32_t line, const char *pcFormat, ...)
+{
+#if (1 == USE_RTT_FOR_DEBUGGING )
+  if( level <= dgbLevel )
+  {
+    uint32_t ms = 0;
+    if( logging_get_msec != NULL )
+      ms = logging_get_msec();
+    va_list args;
+    va_start(args, pcFormat);
+    SEGGER_RTT_printf(0, "%u,%s,%.12s,%u,",ms, logMsg[level], function, line);
+    SEGGER_RTT_vprintf(0, pcFormat, &args);
+    va_end(args);
+  }
+#else
+  (void)pcFormat;
+  (void)level;
+  (void)function;
+  (void)line;
+#endif
+}
+
+/** @brief debug_rtt_printf
+ *  @details Standard printf wrapper. Adds log level and time data
+ *  @param[in] const char * pcFormat = string for parsing variable argument
+ *  @param[in] ...  = variable argument expansion
+ *  @return void
+ */
+void debug_rtt_printf(const char * pcFormat, ...)
+{
+#if (1 == USE_RTT_FOR_DEBUGGING )
+  if( dgbLevel != DBG_LVL_NONE )
+  {
+    uint32_t ms = 0;
+    if( logging_get_msec != NULL )
+      ms = logging_get_msec();
+    va_list args;
+    va_start(args, pcFormat);
+    SEGGER_RTT_printf(0, "%u,",ms );
+    SEGGER_RTT_vprintf(0, pcFormat, &args);
+    va_end(args);
+  }
+#else
+  (void)pcFormat;
+#endif
+}
+
+/** @brief debug_rtt_print_array
+ *  @details Custom printf function to print an array, in hex.
+ *  		Will append newline and carrage return at the end.
+ *  @param[in] const uint8_t *array
+ *  @param[in] uint32_t arrayLen
+ *  @return void
+ */
+void debug_rtt_print_array(const uint8_t *array, uint32_t arrayLen)
+{
+#if (1 == USE_RTT_FOR_DEBUGGING )
+  if( dgbLevel != DBG_LVL_NONE )
+  {
+    uint32_t ms = 0;
+    if( logging_get_msec != NULL )
+      ms = logging_get_msec();
+
+    SEGGER_RTT_printf(0, "%u,",ms );
+
+	for(uint32_t i = 0; i < arrayLen; i++)
+	{
+		SEGGER_RTT_printf(0, "0x%02X ", array[i]);			/* Change to debug_rtt_printf so only data is printed, no everything else added with debug_rtt_printf_ext */
+	}
+	SEGGER_RTT_printf(0, "\r\n");
+  }
+#else
+  (void)array;
+  (void)arrayLen;
+#endif
+}

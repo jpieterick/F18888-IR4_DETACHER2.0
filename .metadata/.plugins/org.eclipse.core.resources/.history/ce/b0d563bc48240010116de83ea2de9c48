@@ -1,0 +1,226 @@
+/**********************************
+ * File: uart_driver.c
+ * Invue Security Products
+ * Copyright 2020
+ **********************************/
+
+#include "uart_driver.h"
+#include "hal_uart.h"
+
+#if defined USE_HAL_UART
+
+#include <stdbool.h>
+#include <stdint.h>
+#include <stddef.h>
+#include "uart_driver.h"
+
+// #defines
+#define RX_BUF_SIZE (64)
+#define TX_BUF_SIZE (64)
+
+// Typedef
+typedef struct UsartDriverBuffers_t
+{
+	uint8_t rx_buf[RX_BUF_SIZE];
+	uint8_t tx_buf[TX_BUF_SIZE];
+} UsartDriverBuffers;
+
+
+/* define up to NUMBER_OF_UARTS UART buses */
+static uart_driver_t inst_uart[NUMBER_OF_UARTS] = {0U};
+
+static UsartDriverBuffers uartDriverRxBuffers[NUMBER_OF_UARTS];
+
+/* prototypes */
+static void uarta_driver_buffered_byte_rx(uint8_t byte_rx);
+static uint8_t uarta_driver_buffered_byte_tx(uint8_t* byte_to_tx);
+
+#ifdef UART2INDX /* defined in hal_uart.h */
+static void uartb_driver_buffered_byte_rx(uint8_t byte_rx);
+static uint8_t uartb_driver_buffered_byte_tx(uint8_t* byte_to_tx);
+#endif
+
+#ifdef UART3INDX /* defined in hal_uart.h */
+static void uartc_driver_buffered_byte_rx(uint8_t byte_rx);
+static uint8_t uartc_driver_buffered_byte_tx(uint8_t* byte_to_tx);
+#endif
+
+#ifdef UART3INDX /* defined in hal_uart.h */
+static void uartd_driver_buffered_byte_rx(uint8_t byte_rx);
+static uint8_t uartd_driver_buffered_byte_tx(uint8_t* byte_to_tx);
+#endif
+
+void uart_driver_init_this_uart(uint8_t thisUartNumber)
+{
+	(void)uart_driver_init(thisUartNumber,
+				           (uart_hal_t*) &uart_defs[thisUartNumber].uart_hal,
+						   uartDriverRxBuffers[thisUartNumber].rx_buf,
+						   RX_BUF_SIZE,
+						   uartDriverRxBuffers[thisUartNumber].tx_buf,
+						   TX_BUF_SIZE);
+}
+
+
+uart_driver_t* uart_driver_init(uint8_t uartIndex,
+  uart_hal_t* uart_hal,
+  uint8_t* rx_buf,
+  size_t rx_buf_size,
+  uint8_t* tx_buf,
+  size_t tx_buf_size)
+{
+	/* set the local member's pointer to the HAL config */
+	inst_uart[uartIndex].uart_hal = uart_hal;
+
+    /* Initialize RX Queue */
+	inst_uart[uartIndex].rx_buf = rx_buf;
+	inst_uart[uartIndex].rx_queue.input = 0U;
+	inst_uart[uartIndex].rx_queue.output = 0U;
+	inst_uart[uartIndex].rx_queue.input_byte = 0U;
+	inst_uart[uartIndex].rx_queue.output_byte = 0U;
+	inst_uart[uartIndex].rx_queue.item_size = sizeof(inst_uart[uartIndex].rx_buf[0U]);
+	inst_uart[uartIndex].rx_queue.elements_in_array_minus_one = rx_buf_size - 1U;
+	inst_uart[uartIndex].rx_queue.array = inst_uart[uartIndex].rx_buf;
+
+    /* Initialize TX Queue */
+	inst_uart[uartIndex].tx_buf = tx_buf;
+	inst_uart[uartIndex].tx_queue.input = 0U;
+	inst_uart[uartIndex].tx_queue.output = 0U;
+	inst_uart[uartIndex].tx_queue.input_byte = 0U;
+	inst_uart[uartIndex].tx_queue.output_byte = 0U;
+	inst_uart[uartIndex].tx_queue.item_size = sizeof(inst_uart[uartIndex].tx_buf[0U]);
+	inst_uart[uartIndex].tx_queue.elements_in_array_minus_one = (tx_buf_size/inst_uart[uartIndex].tx_queue.item_size) - 1U;
+	inst_uart[uartIndex].tx_queue.array = inst_uart[uartIndex].tx_buf;
+
+	if (UART1INDX == uartIndex)
+	{
+		/* tie the UARTA driver call-backs to the HAL ISRs */
+		hal_uartA_callback_init(uarta_driver_buffered_byte_tx,
+								uarta_driver_buffered_byte_rx);
+	}
+#ifdef UART2INDX
+	else if (UART2INDX == uartIndex)
+	{
+		/* tie the UARTB driver call-backs to the HAL ISRs */
+		hal_uartB_callback_init(uartb_driver_buffered_byte_tx,
+								uartb_driver_buffered_byte_rx);
+	}
+#endif
+#ifdef UART2INDX
+	else if (UART3INDX == uartIndex)
+	{
+		/* tie the UARTC driver call-backs to the HAL ISRs */
+		hal_uartC_callback_init(uartc_driver_buffered_byte_tx,
+								uartc_driver_buffered_byte_rx);
+	}
+#endif
+#ifdef UART2INDX
+	else if (UART4INDX == uartIndex)
+	{
+		/* tie the UARTC driver call-backs to the HAL ISRs */
+		hal_uartD_callback_init(uartd_driver_buffered_byte_tx,
+								uartd_driver_buffered_byte_rx);
+	}
+#endif
+
+	hal_uart_init(inst_uart[uartIndex].uart_hal);
+
+	return &inst_uart[uartIndex];
+}
+
+
+static void uarta_driver_buffered_byte_rx(uint8_t byte_rx)
+{
+	(void)cyclic_fifo_queue_add_item(&(inst_uart[UART1INDX].rx_queue), &byte_rx);
+}
+static uint8_t uarta_driver_buffered_byte_tx(uint8_t* byte_to_tx)
+{
+	return( cyclic_fifo_queue_get_item(&(inst_uart[UART1INDX].tx_queue), byte_to_tx) == (unsigned int)0);
+}
+
+#ifdef UART2INDX
+static void uartb_driver_buffered_byte_rx(uint8_t byte_rx)
+{
+	(void)cyclic_fifo_queue_add_item(&(inst_uart[UART2INDX].rx_queue), &byte_rx);
+}
+static uint8_t uartb_driver_buffered_byte_tx(uint8_t* byte_to_tx)
+{
+	return( cyclic_fifo_queue_get_item(inst_uart[UART2INDX].tx_queue, byte_to_tx) == (unsigned int)0);
+}
+#endif
+
+#ifdef UART3INDX
+void uartc_driver_buffered_byte_rx(uint8_t byte_rx)
+{
+	(void)cyclic_fifo_queue_add_item(inst_uart[UART3INDX].rx_queue, &byte_rx);
+}
+static uint8_t uartc_driver_buffered_byte_tx(uint8_t* byte_to_tx)
+{
+	return( cyclic_fifo_queue_get_item(inst_uart[UART3INDX].tx_queue, byte_to_tx) == (unsigned int)0);
+}
+#endif
+
+#ifdef UART4INDX
+void uartd_driver_buffered_byte_rx(uint8_t byte_rx)
+{
+	(void)cyclic_fifo_queue_add_item(inst_uart[UART4INDX].rx_queue, &byte_rx);
+}
+static uint8_t uartd_driver_buffered_byte_tx(uint8_t* byte_to_tx)
+{
+	return (cyclic_fifo_queue_get_item(inst_uart[UART4INDX].tx_queue, byte_to_tx) == (unsigned int)0);
+}
+#endif
+
+
+unsigned int uart_driver_byte_available(uint8_t uartIndex, uint8_t *byte)
+{
+    return cyclic_fifo_queue_get_item(&(inst_uart[uartIndex].rx_queue), byte);
+}
+
+unsigned int uart_driver_tx_bytes_remaining(uint8_t uartIndex)
+{
+    return cyclic_fifo_queue_slots_used(&(inst_uart[uartIndex].tx_queue));
+}
+
+unsigned int uart_driver_rx_bytes_remaining(uint8_t uartIndex)
+{
+    return cyclic_fifo_queue_slots_used(&(inst_uart[uartIndex].rx_queue));
+}
+
+unsigned int uart_driver_tx_bytes_available(uint8_t uartIndex)
+{
+        return cyclic_fifo_queue_slots_remaining(&(inst_uart[uartIndex].tx_queue));
+}
+
+void uart_driver_tx_add_byte(uint8_t uartIndex, uint8_t const *byte)
+{
+    (void)cyclic_fifo_queue_add_item(&(inst_uart[uartIndex].tx_queue), byte);
+}
+bool uart_driver_is_transmitter_enabled(uint8_t uartIndex)
+{
+	//TODO Write function uart_driver_is_transmitter_enabled() (It's used by the IR code)
+	(void)inst_uart[uartIndex];
+	return 1;
+}
+bool uart_driver_is_receiver_enabled(uint8_t uartIndex)
+{
+	//TODO Write function uart_driver_is_receiver_enabled() (It's used by the IR code)
+	(void)uartIndex;
+	return 1;
+}
+
+bool uart_driver_is_receiving(uint8_t uartIndex)
+{
+	return inst_uart[uartIndex].uart_hal->uart_module->ISR & USART_ISR_BUSY;
+}
+
+bool uart_driver_is_transmitting(uint8_t uartIndex)
+{
+	return hal_uart_is_waiting_for_transmit_complete(inst_uart[uartIndex].uart_hal);
+}
+
+void uart_driver_start_transmit_if_stopped(uint8_t uartIndex)
+{
+	hal_uart_enable_tx(inst_uart[uartIndex].uart_hal);
+}
+
+#endif  // USE_HAL_UART

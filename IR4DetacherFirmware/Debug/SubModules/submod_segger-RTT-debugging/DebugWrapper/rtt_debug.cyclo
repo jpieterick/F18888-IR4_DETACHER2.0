@@ -1,0 +1,5 @@
+../SubModules/submod_segger-RTT-debugging/DebugWrapper/rtt_debug.c:64:6:init_rtt_for_debug	1
+../SubModules/submod_segger-RTT-debugging/DebugWrapper/rtt_debug.c:85:6:change_rtt_debug_level	1
+../SubModules/submod_segger-RTT-debugging/DebugWrapper/rtt_debug.c:105:6:debug_rtt_printf_ext	3
+../SubModules/submod_segger-RTT-debugging/DebugWrapper/rtt_debug.c:133:6:debug_rtt_printf	3
+../SubModules/submod_segger-RTT-debugging/DebugWrapper/rtt_debug.c:159:6:debug_rtt_print_array	4

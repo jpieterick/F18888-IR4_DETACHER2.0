@@ -9,6 +9,9 @@ RM := rm -rf
 
 # All of the sources participating in the build are defined here
 -include sources.mk
+-include SubModules/submod_segger-RTT-debugging/SEGGER_RTT/Syscalls/subdir.mk
+-include SubModules/submod_segger-RTT-debugging/SEGGER_RTT/RTT/subdir.mk
+-include SubModules/submod_segger-RTT-debugging/DebugWrapper/subdir.mk
 -include SubModules/submod-ir_comms/subdir.mk
 -include SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/drivers/subdir.mk
 -include SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/subdir.mk
@@ -18,7 +21,11 @@ RM := rm -rf
 -include Drivers/STM32G0xx_HAL_Driver/Src/subdir.mk
 -include Core/Startup/subdir.mk
 -include Core/Src/subdir.mk
+-include Application/fwVersion/Src/subdir.mk
+-include Application/flash_controller/Src/subdir.mk
 -include Application/WirelessPwrTransfer/Src/subdir.mk
+-include Application/Utils/Src/subdir.mk
+-include Application/Piezo/Src/subdir.mk
 -include Application/NFC/Src/subdir.mk
 -include objects.mk
 
@@ -60,6 +67,9 @@ default.size.stdout \
 OBJDUMP_LIST += \
 IR4DetacherFirmware.list \
 
+OBJCOPY_BIN += \
+IR4DetacherFirmware.bin \
+
 
 # All Target
 all: main-build
@@ -83,12 +93,17 @@ IR4DetacherFirmware.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_D
 	@echo 'Finished building: $@'
 	@echo ' '
 
+IR4DetacherFirmware.bin: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-objcopy  -O binary $(EXECUTABLES) "IR4DetacherFirmware.bin"
+	@echo 'Finished building: $@'
+	@echo ' '
+
 # Other Targets
 clean:
-	-$(RM) IR4DetacherFirmware.elf IR4DetacherFirmware.list IR4DetacherFirmware.map default.size.stdout
+	-$(RM) IR4DetacherFirmware.bin IR4DetacherFirmware.elf IR4DetacherFirmware.list IR4DetacherFirmware.map default.size.stdout
 	-@echo ' '
 
-secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST)
+secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST) $(OBJCOPY_BIN)
 
 fail-specified-linker-script-missing:
 	@echo 'Error: Cannot find the specified linker script. Check the linker settings in the build configuration.'

@@ -1,0 +1,11 @@
+../Application/Utils/Src/Utils.c:69:6:runtime_IncrementTick	1
+../Application/Utils/Src/Utils.c:81:10:runtime_getTick	1
+../Application/Utils/Src/Utils.c:93:10:runTime_timeSince	2
+../Application/Utils/Src/Utils.c:110:6:read_SystemVDD	5
+../Application/Utils/Src/Utils.c:137:6:get_SystemVDD_stats	5
+../Application/Utils/Src/Utils.c:163:10:get_SystemVDD	1
+../Application/Utils/Src/Utils.c:173:10:subsat_u16	2
+../Application/Utils/Src/Utils.c:183:10:subsat_u32	2
+../Application/Utils/Src/Utils.c:193:10:addsat_u32	3
+../Application/Utils/Src/Utils.c:210:10:addsat_u16	3
+../Application/Utils/Src/Utils.c:227:8:min_size	2

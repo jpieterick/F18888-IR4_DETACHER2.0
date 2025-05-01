@@ -98,7 +98,7 @@ void IRDeviceSetSDC()
 {
 	// TODO: Write function IRDeviceSetSDC()
 #warning "Function IRDeviceSetSDC() is just a stub."
-kgb
+
 }
 
 /**************************************************************************
@@ -111,6 +111,7 @@ kgb
 *  return values:
 *
 ***************************************************************************/
+#if 0
 static void IRDeviceSendPacket( void )
 {
 	uint8_t byte;
@@ -124,6 +125,7 @@ static void IRDeviceSendPacket( void )
 		}
 	}
 }
+
 
 static void IRDeviceIR2Info(IR2_LockResults_e *ir2_lockState, IR2_Status_e *ir2_status)
 {
@@ -285,5 +287,6 @@ bool IRDeviceIRCommsAreIdle( void )
 
 bool IRCommsDetacherIsAuthorized(void)
 {
-	Return DetacherIsAuthorized;
+	return DetacherIsAuthorized;
 }
+#endif

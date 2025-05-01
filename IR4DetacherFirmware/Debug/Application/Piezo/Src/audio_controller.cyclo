@@ -1,0 +1,11 @@
+../Application/Piezo/Src/audio_controller.c:161:6:ac_change_chirp_volume_lvl	7
+../Application/Piezo/Src/audio_controller.c:194:6:ac_buzzer_inactive	6
+../Application/Piezo/Src/audio_controller.c:199:6:ac_activate_alarm_tone	3
+../Application/Piezo/Src/audio_controller.c:217:6:ac_deactivate_alarm_tone	3
+../Application/Piezo/Src/audio_controller.c:235:6:ac_set_piezo_pwm	3
+../Application/Piezo/Src/audio_controller.c:269:6:ac_chirp	1
+../Application/Piezo/Src/audio_controller.c:275:6:ac_error_tone	1
+../Application/Piezo/Src/audio_controller.c:281:6:ac_notification_locked	2
+../Application/Piezo/Src/audio_controller.c:291:6:ac_notification_unlocked	2
+../Application/Piezo/Src/audio_controller.c:301:6:ac_audio_controller	22
+../Application/Piezo/Src/audio_controller.c:464:17:ac_adjust_alarm_audio_level	1

@@ -136,15 +136,20 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-	hal_gpio_init();
 
-	MX_I2C1_Init();
+  // Update the SystemCoreClock variable. Note that this function must be called any time that the
+  // system clock is changed.
+  SystemCoreClockUpdate();
 
-	MX_ADC1_Init();
+  hal_gpio_init();
 
-	hal_timer_init();
+  MX_I2C1_Init();
 
-	WptControllerInit();
+  MX_ADC1_Init();
+
+  hal_timer_init();
+
+  WptControllerInit();
 
 #if 0
     // TODO: decide what to do with these initialization function call:   
@@ -165,9 +170,9 @@ int main(void)
   MX_TIM3_Init();
   MX_ADC1_Init();
   MX_IWDG_Init();
-  MX_TIM15_Init();
   MX_USART3_UART_Init();
   MX_TIM6_Init();
+  MX_TIM15_Init();
   /* USER CODE BEGIN 2 */
 #endif
   hal_watchdog_init(); // Initialize the the watch dog handle in submod-hal_generic
@@ -236,10 +241,10 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-  RCC_OscInitStruct.PLL.PLLM = RCC_PLLM_DIV1;
-  RCC_OscInitStruct.PLL.PLLN = 8;
+  RCC_OscInitStruct.PLL.PLLM = RCC_PLLM_DIV2;
+  RCC_OscInitStruct.PLL.PLLN = 27;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-  RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
+  RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV4;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();

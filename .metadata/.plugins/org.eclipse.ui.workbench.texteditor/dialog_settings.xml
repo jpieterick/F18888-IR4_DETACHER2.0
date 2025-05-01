@@ -3,20 +3,38 @@
 	<item key="hasShownOverlayPopupBefore" value="true"/>
 	<item key="replaceBarOpen" value="true"/>
 	<list key="searchhistory">
-		<item value="counts_per_50usec"/>
-		<item value="are_there_more_ir_bytes_to_send"/>
-		<item value="authoriz"/>
-		<item value="on_time"/>
-		<item value="PWM"/>
-		<item value="HAL_TIM_PWM_Start"/>
-		<item value="hal_uart_handle"/>
-		<item value="NFC_"/>
-		<item value="PERIPH_DEFS"/>
+		<item value="IR1"/>
+		<item value="SDC"/>
+		<item value="PWM_TIMER_PRESCALE_VALUE"/>
+		<item value="PWM_TIMER_CLOCK_FREQUENCY_HZ"/>
+		<item value="PIN_IR_RX"/>
+		<item value="pin_id"/>
+		<item value="irKey_Status_for_IR3"/>
+		<item value="prescaler_16b"/>
+		<item value="arr"/>
+		<item value="CCMR"/>
+		<item value="TIM_CCER_CC1E | TIM_CCER_CC2E | TIM_CCER_CC3E | TIM_CCER_CC4E | TIM_CCER_CC5E | TIM_CCER_CC6E"/>
+		<item value="ChannelCCxE"/>
+		<item value="Compare 1"/>
+		<item value="CC1"/>
+		<item value="/*"/>
 	</list>
 	<list key="replacehistory">
-		<item value="hal_uart_handle_ptr"/>
-		<item value="DETACHER_IR_KEY_"/>
-		<item value="NFC_HANDLER"/>
+		<item value="PIEZO_PWM_PRESCALER"/>
+		<item value="PIEZO_TIMER_CLOCK_FREQUENCY"/>
+		<item value="IR_UART_RX"/>
+		<item value="IR3_pod_status_e"/>
+		<item value="Compare 6"/>
+		<item value="Compare 5"/>
+		<item value="Compare 4"/>
+		<item value="Compare 3"/>
+		<item value="Compare 2"/>
+		<item value="CC6"/>
+		<item value="CC5"/>
+		<item value="CC4"/>
+		<item value="CC3"/>
+		<item value="CC2"/>
+		<item value=" //"/>
 	</list>
 	<section name="org.eclipse.ui.texteditor.FindReplaceDialog">
 		<item key="wrap" value="true"/>

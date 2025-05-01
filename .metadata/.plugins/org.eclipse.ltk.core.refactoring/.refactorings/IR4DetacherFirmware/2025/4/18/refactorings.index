@@ -1,0 +1,7 @@
+1745960268048	Rename resource 'flash_controller_glue'
+1745962434124	Move 'flash_controller_app.h' to 'Inc'
+1745962438077	Move 'nvm_interface.h' to 'Inc'
+1745962461796	Move 'flash_controller_app.c' to 'Src'
+1745962463864	Move 'nvm_interface.c' to 'Src'
+1746046415812	Rename resource 'hal_debounce.h'
+1746046435721	Rename resource 'hal_debounce.c'

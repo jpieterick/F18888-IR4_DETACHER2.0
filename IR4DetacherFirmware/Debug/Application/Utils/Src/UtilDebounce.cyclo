@@ -1,0 +1,2 @@
+../Application/Utils/Src/UtilDebounce.c:36:6:UtilDebounceReadAndDebounceInputs	3
+../Application/Utils/Src/UtilDebounce.c:70:6:UtilDebounceCheckPinState	7

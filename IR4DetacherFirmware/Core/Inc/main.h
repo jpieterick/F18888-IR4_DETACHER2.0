@@ -61,8 +61,6 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define USER_BUTTON_Pin GPIO_PIN_13
 #define USER_BUTTON_GPIO_Port GPIOC
-#define BASE_BUTTON_Pin GPIO_PIN_14
-#define BASE_BUTTON_GPIO_Port GPIOC
 #define VBOOST_FDBK_Pin GPIO_PIN_0
 #define VBOOST_FDBK_GPIO_Port GPIOA
 #define VBOOST_CAL_PWM_Pin GPIO_PIN_1
@@ -77,8 +75,14 @@ void Error_Handler(void);
 #define LED_GREEN_GPIO_Port GPIOA
 #define WPT_PWM_Pin GPIO_PIN_6
 #define WPT_PWM_GPIO_Port GPIOA
+#define VIN_MONITOR_Pin GPIO_PIN_7
+#define VIN_MONITOR_GPIO_Port GPIOA
+#define DEBUG_RX_Pin GPIO_PIN_0
+#define DEBUG_RX_GPIO_Port GPIOB
 #define NFC_VOUT_SENSE_Pin GPIO_PIN_2
 #define NFC_VOUT_SENSE_GPIO_Port GPIOB
+#define DEBUG_TX_Pin GPIO_PIN_10
+#define DEBUG_TX_GPIO_Port GPIOB
 #define PIEZO_PWM_Pin GPIO_PIN_8
 #define PIEZO_PWM_GPIO_Port GPIOA
 #define IR_UART_TX_Pin GPIO_PIN_9
@@ -93,7 +97,6 @@ void Error_Handler(void);
 #define NFC_POWER_ENABLE_GPIO_Port GPIOB
 #define NFC_FD_INT_Pin GPIO_PIN_7
 #define NFC_FD_INT_GPIO_Port GPIOB
-#define NFC_FD_INT_EXTI_IRQn EXTI4_15_IRQn
 #define NFC_I2C_SCL_Pin GPIO_PIN_8
 #define NFC_I2C_SCL_GPIO_Port GPIOB
 #define NFC_I2C_SDA_Pin GPIO_PIN_9

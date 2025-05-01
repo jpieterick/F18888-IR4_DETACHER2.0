@@ -1,0 +1,2 @@
+../Application/Piezo/Src/animation.c:4:13:stop_and_reset	1
+../Application/Piezo/Src/animation.c:12:9:animation_next_frame	18

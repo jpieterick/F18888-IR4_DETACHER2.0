@@ -38,7 +38,7 @@
 			<item key="ignoreCase" value="true"/>
 			<item key="isRegExSearch" value="false"/>
 			<item key="isWholeWord" value="false"/>
-			<item key="textPattern" value="AHB"/>
+			<item key="textPattern" value="uart_defs"/>
 			<item key="scope" value="0"/>
 			<list key="fileNamePatterns">
 				<item value="*.*"/>
@@ -53,7 +53,7 @@
 			<item key="ignoreCase" value="true"/>
 			<item key="isRegExSearch" value="false"/>
 			<item key="isWholeWord" value="false"/>
-			<item key="textPattern" value="HCLK"/>
+			<item key="textPattern" value="irKey_Status_for_IR3"/>
 			<item key="scope" value="0"/>
 			<list key="fileNamePatterns">
 				<item value="*.*"/>
@@ -65,7 +65,7 @@
 			<item key="ignoreCase" value="true"/>
 			<item key="isRegExSearch" value="false"/>
 			<item key="isWholeWord" value="false"/>
-			<item key="textPattern" value="stm32g070xx.h"/>
+			<item key="textPattern" value="FLASH_KEY_SDC"/>
 			<item key="scope" value="0"/>
 			<list key="fileNamePatterns">
 				<item value="*.*"/>
@@ -77,7 +77,7 @@
 			<item key="ignoreCase" value="true"/>
 			<item key="isRegExSearch" value="false"/>
 			<item key="isWholeWord" value="false"/>
-			<item key="textPattern" value="system_stm32g0xx.h"/>
+			<item key="textPattern" value="PWM_TIMER_HZ_TO_PERIOD_COUNTS"/>
 			<item key="scope" value="0"/>
 			<list key="fileNamePatterns">
 				<item value="*.*"/>
@@ -89,7 +89,7 @@
 			<item key="ignoreCase" value="true"/>
 			<item key="isRegExSearch" value="false"/>
 			<item key="isWholeWord" value="false"/>
-			<item key="textPattern" value="SystemCoreClockUpdate"/>
+			<item key="textPattern" value="IR_transmitByte"/>
 			<item key="scope" value="0"/>
 			<list key="fileNamePatterns">
 				<item value="*.*"/>
@@ -101,7 +101,7 @@
 			<item key="ignoreCase" value="true"/>
 			<item key="isRegExSearch" value="false"/>
 			<item key="isWholeWord" value="false"/>
-			<item key="textPattern" value="SYSCLK"/>
+			<item key="textPattern" value="RxISR"/>
 			<item key="scope" value="0"/>
 			<list key="fileNamePatterns">
 				<item value="*.*"/>
@@ -113,7 +113,7 @@
 			<item key="ignoreCase" value="true"/>
 			<item key="isRegExSearch" value="false"/>
 			<item key="isWholeWord" value="false"/>
-			<item key="textPattern" value="apb"/>
+			<item key="textPattern" value="USART3_4_IRQHandler"/>
 			<item key="scope" value="0"/>
 			<list key="fileNamePatterns">
 				<item value="*.*"/>
@@ -125,7 +125,7 @@
 			<item key="ignoreCase" value="true"/>
 			<item key="isRegExSearch" value="false"/>
 			<item key="isWholeWord" value="false"/>
-			<item key="textPattern" value="hal_timer_blocking_delay"/>
+			<item key="textPattern" value="USART1_IRQHandler"/>
 			<item key="scope" value="0"/>
 			<list key="fileNamePatterns">
 				<item value="*.*"/>
@@ -137,7 +137,7 @@
 			<item key="ignoreCase" value="true"/>
 			<item key="isRegExSearch" value="false"/>
 			<item key="isWholeWord" value="false"/>
-			<item key="textPattern" value="hal_timer_blocking_delay_for_50us"/>
+			<item key="textPattern" value="MX_USART1_UART_Init"/>
 			<item key="scope" value="0"/>
 			<list key="fileNamePatterns">
 				<item value="*.*"/>
@@ -149,7 +149,7 @@
 			<item key="ignoreCase" value="true"/>
 			<item key="isRegExSearch" value="false"/>
 			<item key="isWholeWord" value="false"/>
-			<item key="textPattern" value="hal_timer_set_timer_for_blocking_delays"/>
+			<item key="textPattern" value="USART2_IRQHandler"/>
 			<item key="scope" value="0"/>
 			<list key="fileNamePatterns">
 				<item value="*.*"/>
@@ -161,7 +161,7 @@
 			<item key="ignoreCase" value="true"/>
 			<item key="isRegExSearch" value="false"/>
 			<item key="isWholeWord" value="false"/>
-			<item key="textPattern" value="hal_timer_interrupt_callback"/>
+			<item key="textPattern" value="UART2INDX"/>
 			<item key="scope" value="0"/>
 			<list key="fileNamePatterns">
 				<item value="*.*"/>
@@ -173,7 +173,7 @@
 			<item key="ignoreCase" value="true"/>
 			<item key="isRegExSearch" value="false"/>
 			<item key="isWholeWord" value="false"/>
-			<item key="textPattern" value="TIM_PWM"/>
+			<item key="textPattern" value="blocking_delay_prescaler_pwr_of_2"/>
 			<item key="scope" value="0"/>
 			<list key="fileNamePatterns">
 				<item value="*.*"/>
@@ -187,6 +187,7 @@
 	</section>
 	<section name="org.eclipse.search.text.FileSearchResultPage">
 		<item key="org.eclipse.search.resultpage.limit" value="1000"/>
+		<item key="org.eclipse.search.resultpage.layout" value="1"/>
 	</section>
 	<section name="">
 		<item key="org.eclipse.search.resultpage.limit" value="1000"/>

@@ -1,0 +1,689 @@
+/****************************************************************************
+FileName:
+Dependencies:
+Processor:
+Hardware:
+Complier:
+Company:      InVue
+
+
+ Author				Date			Comment
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Nick McKendree		7/2017
+kburtness			Original - S960
+*****************************************************************************
+General description:
+
+IR Key Application Level Functions
+
+
+
+usage:
+
+***************************************************************************
+***************************** NOTE ****************************************
+***************************************************************************
+
+****************************************************************************
+                            INCLUDES
+****************************************************************************/
+#include <stdint.h>
+#include <stdbool.h>
+#include <string.h>
+
+#include "hal_uart.h"
+#include "hal_timer.h"
+#include "hal_gpio.h"
+#include "uart_driver.h"
+
+#include "periphdefs.h"
+#include "invue_ir_comms.h"
+#include "app_ir_key_handler.h"
+#include "cyclic_fifo_queue.h"
+#include "app_version.h"
+//#include "data.h"
+//#include "security.h"
+#include "rtt_debug.h"
+#include "audio_controller.h"
+#include "nvm_interface.h"
+#include "Utils.h"
+
+/****************************************************************************
+                            TYPEDEFS
+****************************************************************************/
+
+/****************************************************************************
+                            DEFINES
+****************************************************************************/
+#define OUR_PROD_CATEGORY           	        PRODUCT_LINE_POD
+#define OUR_PROD_ID								PRODUCT_LINE_POD_F2300
+#define IR_IDLE_INACTIVE_TIME_MS                20
+
+#define HW_MODEL_MASK							0xE0		// Preserve 3 bits for HW variation
+#define HW_MODEL_BIT_SHIFT						5
+#define mSetHWModel(x,in)						( (in & ~HW_MODEL_MASK) | x << HW_MODEL_BIT_SHIFT )
+#define HW_REV_MASK								0x1F		// Preserve 5 bits for HW version
+#define HW_REV_BIT_SHIFT						0
+#define MSetHWRev(x,in)							( (in & ~HW_REV_MASK) | x << HW_REV_BIT_SHIFT )
+#define IR_BAUDRATE								6553
+
+#define IR_LOOPBACK_LOOP_CNT					10
+#define IR_LOOPBACK_SIGNAL_DWELL_CNT			200
+#define IR_LOOPBACK_PASS_CNT					( ( IR_LOOPBACK_SIGNAL_DWELL_CNT * IR_LOOPBACK_LOOP_CNT) - ( ( IR_LOOPBACK_SIGNAL_DWELL_CNT * IR_LOOPBACK_LOOP_CNT) >> 2))			// Passing is 75% of max count
+
+#define RX_BUF_SIZE (64U)
+#define TX_BUF_SIZE (64U)
+
+#define IDLE_TIME_BETWEEN_KEY_PRESSES_MS        375			// Was 600 but recorded as low as 440mS with IR2 Keys. THis is a filter to stop the key from sending messages too fast or catching retries. This was implemented due to IR2 Keys in the RTD days
+#define KEYPRESS_ACCUMULATE_PRESSES_TIMEOUT_MS  1250		// Allow > 1s windows to accumulate key presses. Each key press will extend the window
+#define BLOCK_LP_FOR_IR_MAX_TIME_MS				50
+
+#define DBG_IR_COMMS
+#ifdef DBG_IR_COMMS
+#define mDebugIR( args )					mLog_DEBUG args
+#else
+#define mDebugIR( args )
+#endif
+
+/****************************************************************************
+                            GLOBAL VARIABLES
+****************************************************************************/
+volatile uint32_t ir_inactive_tmr = 0;
+uint32_t blank_key_timer_ms = 0;
+uint32_t delay_for_blank_key_active = 0;
+extern volatile uint32_t are_there_more_ir_bytes_to_send;
+uint32_t temperature_for_codeReader = 0;
+static uint8_t invue_last_key_sn[ DEVICE_SN_BYTES ];
+static uart_driver_t *k_uart = (void*)0;
+static uint8_t rx_buf[RX_BUF_SIZE] = {0U};
+static uint8_t tx_buf[TX_BUF_SIZE] = {0U};
+static bool singleKeyPressDetected = false;
+bool lockdownKeyPressesDetected = false;
+static uint8_t sdc_ram_copy[ SZ_OF_IR3_SDC ] = {0};
+static uint8_t our_serial_ram_copy[ DEVICE_SN_BYTES ] = {0};
+static uint8_t ir_mode_ram_copy = IR1_MODE;
+static volatile uint32_t block_lp_for_IR_tmr = 0;
+static volatile uint32_t blank_key_timer_msec = 0;
+static volatile uint32_t msec_since_last_rx = 0;
+static uint8_t  rtl_received_flag      = false;
+static volatile uint32_t continuousKeypressFilterTmr = IDLE_TIME_BETWEEN_KEY_PRESSES_MS;
+static volatile uint32_t keyPressTimeoutTmr = KEYPRESS_ACCUMULATE_PRESSES_TIMEOUT_MS;
+static uint32_t validKeyPresses = 0;
+
+/****************************************************************************
+                            FUNCTION PROTOTYPES
+****************************************************************************/
+static void irKey_blocking_delay(void);
+static void irKey_diff_serial_and_update( uint8_t *_sn );
+static void irKey_diff_sdc_and_update( uint8_t *_sdc);
+
+/****************************************************************************
+                            CODE
+****************************************************************************/
+
+
+/** @brief irKey_Init
+ *  @details
+ *  @param[in] void
+ *  @return void
+ */
+void irKey_Init( void )
+{
+	/* Register a callback for the IR key blocking delay */
+	uart_defs[IR_COMM_UART].uart_hal.blocking_delay = irKey_blocking_delay;
+
+	/* initialize the UART driver */
+	k_uart = uart_driver_init(uart_defs[IR_COMM_UART].uart_bus_num,
+							&uart_defs[IR_COMM_UART].uart_hal,
+							rx_buf,
+							RX_BUF_SIZE,
+							tx_buf,
+							TX_BUF_SIZE);
+
+	/* Start with transmitter disabled */
+//	hal_uart_configure_gpio( &uart_defs[IR_COMM_UART].uart_hal, true /*conn_tx*/, true /*conn_rx*/, false /*conn_dir*/);
+	hal_uart_disable_tx(  &uart_defs[IR_COMM_UART].uart_hal );
+	hal_uart_enable_rx( &uart_defs[IR_COMM_UART].uart_hal );
+
+	if( nvm_read_sdc( sdc_ram_copy, SZ_OF_IR3_SDC) == 0 /* Not found*/ )
+	{
+		memset( sdc_ram_copy, 0, SZ_OF_IR3_SDC);
+		mDebugIR(("No SDC found, init to 0 0 0 0\r\n"));
+	}
+	if( nvm_read_ir_mode( &ir_mode_ram_copy, sizeof(ir_mode_ram_copy)) == 0 /* Not found*/ )
+	{
+		/* Doesn't exist */
+		ir_mode_ram_copy = IR1_MODE;
+		mDebugIR(("No IR Mode found, init to IR1\r\n"));
+	}
+	if( nvm_read_serial( our_serial_ram_copy, DEVICE_SN_BYTES) == 0 /* Not found*/ )
+	{
+		/* Doesn't exist */
+		memset( our_serial_ram_copy, 0, DEVICE_SN_BYTES);
+		mDebugIR(("No Serial found, init to 0 0 0 0 0 0 0 0\r\n"));
+	}
+}
+
+/** @brief irKey_is_inactive
+ *  @details
+ *  @param[in] void
+ *  @return bool
+ */
+bool irKey_is_inactive(void)
+{
+	return ((0 == uart_driver_tx_bytes_remaining(k_uart)) && /* no bytes in the Tx queue                                 */
+			(0 == uart_driver_rx_bytes_remaining(k_uart)) && /* no bytes in the Rx queue                                 */
+			(!uart_driver_is_transmitter_enabled(k_uart)) && /* UART transmitter disabled                                */
+			( uart_driver_is_receiver_enabled(k_uart))    && /* UART receiver is enabled (front porch delay has expired) */
+			(!uart_driver_is_receiving(k_uart))           && /* UART is not actively receiving                           */
+			(!uart_driver_is_transmitting(k_uart))        && /* UART is not actively transmitting                        */
+			invue_is_ir_key_receiver_idle()               && /* IR key handler is waiting for its first byte             */
+			block_lp_for_IR_tmr == 0);
+}
+
+/** @brief irKey_get_last_key_sn_ptr
+ *  @details
+ *  @param[in] void
+ *  @return uint8_t*
+ */
+uint8_t* irKey_get_last_key_sn_ptr(void)
+{
+	return  invue_last_key_sn;
+}
+
+/** @brief irKey_runLoopback
+ *  @details Performs simple loopback on the ir circuit
+				with gpio control. Cant use uart and the detector's
+				response is too slow when it is flooded.
+				Note, this function prototype is defined to set
+				local optimization to -O0 (off) as optimization really
+				messed up the if conditional check at the end.
+ *  @param[in] void
+ *  @return bool
+ */
+bool irKey_runLoopback( void )
+{
+	uint32_t loopCount = 0;
+	uint32_t inputLowCounter = 0;
+	uint32_t inputHighCounter = 0;
+	uint32_t i = 0;
+
+	hal_uart_disable_tx(  &uart_defs[IR_COMM_UART].uart_hal );
+	hal_uart_disable_rx( &uart_defs[IR_COMM_UART].uart_hal );
+
+	hal_gpio_set_output( PIN_IR_TX, 0);
+
+	hal_uart_configure_gpio( &uart_defs[IR_COMM_UART].uart_hal, false /*conn_tx*/, false /*conn_rx*/, false /*conn_dir*/);
+
+	for( loopCount = 0; loopCount < IR_LOOPBACK_LOOP_CNT; loopCount++)
+	{
+		hal_gpio_set_output( PIN_IR_TX, 0);
+		hal_timer_blocking_delay_for_152us();					// This is important to let the receiver sync up as when it is flooded it has a slow response.
+		for(i = 0; i < IR_LOOPBACK_SIGNAL_DWELL_CNT; i++)
+		{
+			inputLowCounter += (hal_gpio_get_input( PIN_IR_RX ) == 0);
+		}
+
+		hal_gpio_set_output( PIN_IR_TX, 1);
+		hal_timer_blocking_delay_for_152us();					// This is important to let the receiver sync up as when it is flooded it has a slow response.
+		for(i = 0; i < IR_LOOPBACK_SIGNAL_DWELL_CNT; i++)
+		{
+			inputHighCounter += (hal_gpio_get_input( PIN_IR_RX ) == 1);
+		}
+	}
+
+	hal_gpio_set_output( PIN_IR_TX, 0);
+
+	hal_uart_configure_gpio( &uart_defs[IR_COMM_UART].uart_hal, true /*conn_tx*/, true /*conn_rx*/, false /*conn_dir*/);
+	hal_uart_disable_tx(  &uart_defs[IR_COMM_UART].uart_hal );
+	hal_uart_enable_rx( &uart_defs[IR_COMM_UART].uart_hal );
+
+
+	if( inputLowCounter >= IR_LOOPBACK_PASS_CNT && inputHighCounter >= IR_LOOPBACK_PASS_CNT )
+	{
+		return true;
+	}
+	return false;
+}
+
+/** @brief processKeyInteraction
+ *  @details
+ *  @param[in] uint32_t ms_since_called
+ *  @return void
+ */
+static void processKeyInteraction()
+{
+	/***********************************************************************************
+	*  Process only valid key interactions. Magic Key stuff handled elsewhere
+	**********************************************************************************/
+	if( invue_was_valid_sdc_received() )
+	{
+		if( continuousKeypressFilterTmr == 0 )
+		{
+			continuousKeypressFilterTmr = IDLE_TIME_BETWEEN_KEY_PRESSES_MS;
+			ac_chirp(1);
+			validKeyPresses++;
+			if( validKeyPresses >= 3 )
+			{
+				// Customer feedback is desire to immediately drive motor on third press. Let's alter keyPressTimeoutTmr to a small delay
+				keyPressTimeoutTmr = 100;
+			}
+			else
+			{
+				if( security_is_alarming() == false )
+				{
+					keyPressTimeoutTmr = KEYPRESS_ACCUMULATE_PRESSES_TIMEOUT_MS;
+				}
+				else
+				{
+					keyPressTimeoutTmr = 0;
+				}
+			}
+		}
+	}
+
+	if( validKeyPresses )
+	{
+		if( keyPressTimeoutTmr == 0 )
+		{
+			switch( validKeyPresses )
+			{
+				case 1:
+					mDebugIR(("Single press\r\n"));
+					singleKeyPressDetected = true;
+					break;
+				case 3:
+					mDebugIR(("3 presses\r\n"));
+					// Set new locksdown state here but dont drive motors here
+					lockdownKeyPressesDetected = true;
+					break;
+				default:
+					break;
+			}
+			validKeyPresses = 0;
+			keyPressTimeoutTmr = KEYPRESS_ACCUMULATE_PRESSES_TIMEOUT_MS;
+		}
+	}
+}
+
+void irKey_HandleTimers( uint32_t elapsed_ms )
+{
+	block_lp_for_IR_tmr = subsat_u32( block_lp_for_IR_tmr, elapsed_ms );
+	/* if a RTL was previously received */
+	if (rtl_received_flag || blank_key_timer_msec > 0 )
+	{
+		blank_key_timer_msec = addsat_u32( blank_key_timer_msec, elapsed_ms );
+	}
+	continuousKeypressFilterTmr = subsat_u32( continuousKeypressFilterTmr, elapsed_ms );
+	if( validKeyPresses )
+	{
+		keyPressTimeoutTmr = subsat_u32( keyPressTimeoutTmr, elapsed_ms );
+	}
+}
+
+/** @brief irKey_run
+ *  @details
+ *  @param[in] uint16_t time_since_last_called_msec
+ *  @param[in] ir3_pod_status_e ir3_system_status
+ *  @return void
+ */
+void irKey_run(ir3_pod_status_e ir3_system_status)
+{
+	uint8_t  received_byte              = 0;
+	uint8_t  byte_available_flag        = 0;
+	uint32_t tx_msg_length              = 0;
+	uint8_t* ir_msg_in_ptr              = 0;
+	uint8_t* ir_msg_out_ptr             = 0;
+	uint8_t  waiting_for_wipe_key_msec  = 0;
+	uint8_t  legacy_code_reader_data[9] = { 0 };
+	uint8_t  byte_out_cntr = 0;
+	invue_ir_mode_enum ir_mode = 		(invue_ir_mode_enum)ir_mode_ram_copy;
+	uint16_t fw_version_to_send;
+
+	uint8_t sdc_temp[ SZ_OF_IR3_SDC ];
+	uint8_t serial_temp[ DEVICE_SN_BYTES ];
+
+	/* if a byte is available */
+	if (0 == uart_driver_byte_available(k_uart, &received_byte))
+	{
+		byte_available_flag      = 1;
+		msec_since_last_rx       = 0;
+	}
+
+	/* call the byte handler; if the byte handler indicates a complete message is available */
+	if (invue_get_ir_key_packet(ir_mode, msec_since_last_rx, byte_available_flag, received_byte, &ir_msg_in_ptr))
+	{
+		// if the command is a legacy code reader request; assign code reader data
+		if ((uint8_t)TOKEN_IR1_GSDC == ir_msg_in_ptr[0])
+		{
+			fw_version_to_send = invue_fw_version_legacy;
+
+			legacy_code_reader_data[0] = 0;
+			legacy_code_reader_data[1] = 0;
+			legacy_code_reader_data[2] = 0;
+		    legacy_code_reader_data[3] = 0;
+		    legacy_code_reader_data[4] = 0;
+			legacy_code_reader_data[5] = (uint8_t)fw_version_to_send;
+			legacy_code_reader_data[6] = (uint8_t)(fw_version_to_send >> 8);
+			legacy_code_reader_data[7] = 0;	/* temperature */
+			legacy_code_reader_data[8] = 0;	/* cal data    */
+		}
+
+		memcpy(sdc_temp, sdc_ram_copy,SZ_OF_IR3_SDC);
+		memcpy(serial_temp, our_serial_ram_copy,DEVICE_SN_BYTES);
+
+		// handle the IR key message
+		tx_msg_length = invue_handle_ir_key_message(ir_msg_in_ptr,
+					                                &ir_msg_out_ptr,
+													sdc_temp,
+													&rtl_received_flag,
+													legacy_code_reader_data,
+													&waiting_for_wipe_key_msec,
+													G4DS_Premium_Tablet,
+													serial_temp,
+													NULL,
+													NULL,
+													NULL,
+													ir3_system_status,
+													&ir_mode,
+													invue_fw_version_new,
+													true,
+													OUR_PROD_CATEGORY,
+													OUR_PROD_ID);
+
+		irKey_diff_sdc_and_update(sdc_temp);			// Check if the SDC has changed
+		irKey_diff_serial_and_update(serial_temp);		// Check if the serial number has changed
+
+		// if the IR mode is IR3, ensure the flag is set properly
+		if (IR3_MODE == ir_mode && ir_mode_ram_copy != IR3_MODE)
+		{
+			if( nvm_write_ir_mode( &ir_mode, sizeof(ir_mode) ) != 0 )
+			{
+				ir_mode_ram_copy = IR3_MODE;
+				mDebugIR(("IR Mode updated to IR3\r\n"));
+			}
+		}
+
+		/* reset the blank key timer upon every received message */
+		blank_key_timer_msec = 0;
+
+		// if there is data to transmit
+		if (tx_msg_length > 0)
+		{
+			/* since the receiver may be active for a full byte width, we need to switch the Rx function over to
+			 * a digital input so we don't contaminate the Rx buffer */
+			hal_uart_disable_rx( k_uart->uart_hal );
+			hal_uart_enable_tx( k_uart->uart_hal );
+			//Make sure we have a good valid front porch for start bit on response. Some keys are picky
+			hal_timer_blocking_delay_variable_usec(2000);
+			/* transmit the packet */
+			for (byte_out_cntr = 0; byte_out_cntr < tx_msg_length; ++byte_out_cntr)
+			{
+				uart_driver_tx_add_byte(k_uart, &ir_msg_out_ptr[byte_out_cntr]);
+			}
+
+			block_lp_for_IR_tmr = BLOCK_LP_FOR_IR_MAX_TIME_MS;
+			uart_driver_start_transmit_if_stopped(k_uart);
+		}
+	}
+	/* if the blank key timeout has occurred */
+	if (blank_key_timer_msec >= IR_RX_TIMEOUT_MSEC)
+	{
+		// clear the RTL received flag
+		rtl_received_flag = false;
+
+		/* clear the blank key timer */
+		blank_key_timer_msec = 0;
+
+		/* indicate a blank key is in use, passing in a pointer to the actual SDC in RAM */
+		invue_blank_key_used(ir_mode, sdc_ram_copy);
+	}
+
+	processKeyInteraction( );
+}
+
+/** @brief irKey_blocking_delay
+ *  @details 	Blocking delay after transmission complete. invue_ir1_ir2.h comments explain why this is needed
+ *  @param[in] void
+ *  @return void
+ */
+static void irKey_blocking_delay(void)
+{
+	hal_uart_disable_tx(k_uart->uart_hal);
+	hal_timer_blocking_delay_for_152us();
+}
+
+/** @brief single_ir_keypress_detected
+ *  @details
+ *  @param[in] void
+ *  @return bool
+ */
+bool single_ir_keypress_detected( void )
+{
+	if(singleKeyPressDetected)
+	{
+		singleKeyPressDetected = false;
+		return true;
+	}
+	return false;
+}
+
+/** @brief pairing_ir_keypresses_detected
+ *  @details
+ *  @param[in] void
+ *  @return bool
+ */
+bool lockdown_ir_keypresses_detected( void )
+{
+	if(lockdownKeyPressesDetected)
+	{
+		lockdownKeyPressesDetected = false;
+		return true;
+	}
+	return false;
+}
+
+/** @brief irKey_diff_serial_and_update
+ *  @details
+ *  @param[in] uint8_t *_sn
+ *  @return void
+ */
+static void irKey_diff_serial_and_update( uint8_t *_sn )
+{
+	uint32_t writeResult;
+	if( memcmp( _sn, our_serial_ram_copy/*ram copy*/,DEVICE_SN_BYTES ) != 0)
+	{
+		writeResult = (nvm_write_serial( _sn, DEVICE_SN_BYTES) == DEVICE_SN_BYTES);
+		if(writeResult)
+		{
+			mDebugIR(("Serial changed %02X %02X %02X %02X %02X %02X %02X %02X\r\n", _sn[0], _sn[1], _sn[2], _sn[3], _sn[4], _sn[5], _sn[6], _sn[7]));
+			memcpy( our_serial_ram_copy, _sn, DEVICE_SN_BYTES);
+		}
+		else
+		{
+			mDebugIR(("Serial write failed\r\n"));
+		}
+	}
+}
+
+/** @brief irKey_diff_sdc_and_update
+ *  @details
+ *  @param[in] uint8_t *_sdc
+ *  @return void
+ */
+static void irKey_diff_sdc_and_update( uint8_t *_sdc)
+{
+	uint32_t writeResult;
+
+	if( memcmp( _sdc, sdc_ram_copy/*ram copy*/,SZ_OF_IR3_SDC ) != 0)
+	{
+		writeResult = (nvm_write_sdc( _sdc, SZ_OF_IR3_SDC) == SZ_OF_IR3_SDC);
+		if(writeResult)
+		{
+			mDebugIR(("SDC  changed %02X %02X %02X %02X\r\n", _sdc[0], _sdc[1], _sdc[2], _sdc[3]));
+			memcpy( sdc_ram_copy, _sdc, SZ_OF_IR3_SDC);
+		}
+		else
+		{
+			mDebugIR(("SDC write failed\r\n"));
+		}
+	}
+}
+
+/** @brief irKey_reset_sdc
+ *  @details
+ *  @param[in] void
+ *  @return void
+ */
+void irKey_reset_sdc(void)
+{
+	uint32_t writeResult;
+	memset( sdc_ram_copy, 0, SZ_OF_IR3_SDC);
+	writeResult = (nvm_write_sdc( sdc_ram_copy/*ram copy*/, SZ_OF_IR3_SDC) == SZ_OF_IR3_SDC);
+	if(writeResult)
+	{
+		mDebugIR(("SDC reset\r\n"));
+	}
+	else
+	{
+		mDebugIR(("SDC reset failed\r\n"));
+	}
+}
+
+/** @brief irKey_have_valid_SDC
+ *  @details
+ *  @param[in] void
+ *  @return bool: true if we have a SDC
+ */
+bool irKey_have_valid_SDC( void )
+{
+	return ( !(sdc_ram_copy[0] == 0 && sdc_ram_copy[1] == 0 && sdc_ram_copy[2] == 0 && sdc_ram_copy[3] == 0 ) );
+}
+
+/** @brief irKey_reset_mode
+ *  @details
+ *  @param[in] void
+ *  @return void
+ */
+void irKey_reset_mode(void)
+{
+	uint32_t writeResult;
+	ir_mode_ram_copy = IR1_MODE;
+
+	writeResult = (nvm_write_ir_mode( &ir_mode_ram_copy/*ram copy*/, sizeof(ir_mode_ram_copy)) == sizeof(ir_mode_ram_copy));
+	if(writeResult)
+	{
+		mDebugIR(("IR Mode reset\r\n"));
+	}
+	else
+	{
+		mDebugIR(("IR Mode reset failed\r\n"));
+	}
+}
+
+/** @brief update_serial
+ *  @details
+ *  @param[in] uint8_t *serial
+ *  @return bool: true if the serial is updated
+ */
+bool update_serial( uint8_t *serial)
+{
+	if( memcmp( serial, our_serial_ram_copy, DEVICE_SN_BYTES) == 0 )
+		return true;
+	if( nvm_write_serial( serial, DEVICE_SN_BYTES ) == DEVICE_SN_BYTES )
+	{
+		memcpy( our_serial_ram_copy, serial, DEVICE_SN_BYTES );
+		return true;
+	}
+	return false;
+}
+
+/** @brief is_my_serial_valid
+ *  @details
+ *  @param[in] void
+ *  @return bool: true if the serial is present and appears valid
+ */
+bool is_my_serial_valid( void )
+{
+	// The serial number has already been read from NV Data on boot.
+	// If it didn't exist, it would be set to all 0's
+	// This if check will capture all zero condition, all FF condition, and wrong serial number condition
+	if( our_serial_ram_copy[0] != OUR_PROD_CATEGORY || our_serial_ram_copy[1] != OUR_PROD_ID )
+		return false;
+	return true;
+}
+
+/** @brief is_ir_mode_IR1
+ *  @details
+ *  @param[in] void
+ *  @return bool: true if the we are in IR1 mode
+ */
+bool is_ir_mode_IR1( void )
+{
+	return (ir_mode_ram_copy == IR1_MODE);
+}
+
+/** @brief ir_rx_gpio_cb
+ *  @details Callback for IR RX GPIO Interrupt while in low power mode
+ *  @param[in] v: Interrupt #
+ *  @return void
+ */
+static void ir_rx_gpio_cb( uint32_t v )
+{
+	(void)v;
+	block_lp_for_IR_tmr = BLOCK_LP_FOR_IR_MAX_TIME_MS;
+}
+
+/** @brief set_ir_for_sleep
+ *  @details Setup IR GPIO for sleep mode
+ *  @param[in] void
+ *  @return void
+ */
+void set_ir_for_sleep( void )
+{
+	hal_gpio_set_pin_interrupt(PIN_IR_RX, IO_INTERRUPT_RISING_EDGE);
+	hal_gpio_set_pin_isr_cb( PIN_IR_RX, ir_rx_gpio_cb);
+}
+
+/** @brief set_ir_for_active
+ *  @details Setup IR GPIO for active mode
+ *  @param[in] void
+ *  @return void
+ */
+void set_ir_for_active( void )
+{
+	hal_gpio_disable_pin_interrupt( PIN_IR_RX );
+	hal_gpio_set_pin_isr_cb( PIN_IR_RX, NULL);
+}
+
+/** @brief set_valid_IR_press_for_mtp
+ *  @details External access to set a simulated valid key press.
+ *  	Used from CLI for MTP access. CLI acts as a gatekeeper where there has
+ *  	to be no SDC and in Test Mode so this isn't a security hole.
+ *  @param[in] void
+ *  @return void
+ */
+void set_valid_IR_press_for_mtp( void )
+{
+	singleKeyPressDetected = true;
+}
+
+#if NOT_USED
+void test_ir_tx(void)
+{
+	uint8_t byte_out_cntr = 0;
+	uint8_t bytes[ ] = { 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55};
+	/* since the receiver may be active for a full byte width, we need to switch the Rx function over to
+	 * a digital input so we don't contaminate the Rx buffer */
+	hal_uart_disable_rx( k_uart->uart_hal );
+	hal_uart_enable_tx( k_uart->uart_hal );
+	//Make sure we have a good valid front porch for start bit on response. Some keys are picky
+	hal_timer_blocking_delay_variable_usec(2000);
+	/* transmit the packet */
+	for (byte_out_cntr = 0; byte_out_cntr < sizeof(bytes); ++byte_out_cntr)
+	{
+		uart_driver_tx_add_byte(k_uart, &bytes[byte_out_cntr]);
+	}
+	uart_driver_start_transmit_if_stopped(k_uart);
+}
+#endif

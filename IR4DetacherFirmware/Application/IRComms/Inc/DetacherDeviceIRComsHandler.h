@@ -2,9 +2,10 @@
 * Copyright © 2025 InVue Security Products, Charlotte, NC
 * All Rights Reserved.
 *
-*  File: DetacherIRKeyHandler.h
+*  File: DetacherDeviceIRComsHandler.h
 *
-*  Description: Includes file for the NCF_Handler
+*  Description: Includes file for the Detacher IR Device side IR Communications
+*  handler
 ****************************************************************************/
 #ifndef DETACHER_IR_KEY_HANDLER_H_
 #define DETACHER_IR_KEY_HANDLER_H_

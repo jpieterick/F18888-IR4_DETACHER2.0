@@ -23,12 +23,12 @@ bool product_has_alarm_audio_btn( void )
 
 bool alarm_btn_pressed( void )
 {
-	return false; //F1841 doesn't have an alarm button
+	return false; //F1888 doesn't have an alarm button
 }
 
 void alarm_status_led_ctrl( bool should_be_on )
 {
-	// Leave empty - F1841 doesn't have this LED
+	// TODO: Does F1888 need this?
 	(void)should_be_on;
 }
 

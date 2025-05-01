@@ -1,0 +1,67 @@
+/** @file app_ir_key_handler.h
+ *  @brief
+ *
+ *  @details
+ *  To Use:
+ *
+ *  Assumptions made:
+ *
+ *
+ *  @author Nick M
+ *  @bug No known bugs.
+ *
+ *  InVue Security Products
+ *  Copyright 2022
+ */
+
+/****************************************************************************/
+#ifndef __APP_IR_KEY_HANDLER_H_
+#define __APP_IR_KEY_HANDLER_H_
+
+/****************************************************************************
+						INCLUDES
+*****************************************************************************/
+#include <stdint.h>
+#include <stdbool.h>
+#include "invue_ir1_ir3.h"
+#include "motorDrive.h"
+
+/****************************************************************************
+						GLOBAL TYPEDEFS
+*****************************************************************************/
+
+/****************************************************************************
+                        DEFINES AND ENUMARATED VALUES
+*****************************************************************************/
+
+/****************************************************************************
+                        MACROS
+*****************************************************************************/
+
+/****************************************************************************
+                        GLOBAL FUNCTION PROTOTYPES
+*****************************************************************************/
+void irKey_Init( void );
+bool irKey_is_inactive(void);
+uint8_t* irKey_get_last_key_sn_ptr(void);
+ir3_pod_status_e irKey_Status_for_IR3( void );
+bool irKey_runLoopback( void )__attribute__ ((optimize("-O0")));
+void irKey_run(ir3_pod_status_e ir3_system_status);
+bool single_ir_keypress_detected( void );
+bool lockdown_ir_keypresses_detected( void );
+void irKey_reset_sdc(void);
+void irKey_reset_mode(void);
+bool irKey_have_valid_SDC( void );
+bool is_my_serial_valid( void );
+bool update_serial( uint8_t *serial );
+bool is_ir_mode_IR1( void );
+void set_ir_for_sleep( void );
+void set_ir_for_active(void);
+void irKey_HandleTimers( uint32_t elapsed_ms );
+void set_valid_IR_press_for_mtp( void );
+
+/****************************************************************************
+                        GLOBAL VARIABLES
+******************************************************************************/
+
+#endif /* __APP_IR_KEY_HANDLER_H_ */

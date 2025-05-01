@@ -1,0 +1,17 @@
+/*
+ * hal_debounce.h
+ *
+ *  Created on: Aug 14, 2023
+ *      Author: jpieterick
+ */
+
+#ifndef HAL_DEBOUNCE_H_
+#define HAL_DEBOUNCE_H_
+
+#include <stdbool.h>
+#include "pindefs.h"
+
+void HalDebounceReadAndDebounceInputs(void);
+bool HalDebounceCheckPinState(enum pin_id pinId,bool state2BeChecked);
+
+#endif /* HAL_DEBOUNCE_H_ */

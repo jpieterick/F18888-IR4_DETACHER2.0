@@ -5,3 +5,5 @@ padlock
 toolchain
 nucleo
 debounce
+prescaler
+versioning
