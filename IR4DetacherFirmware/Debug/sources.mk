@@ -26,6 +26,7 @@ SUBDIRS := \
 Application/NFC/Src \
 Application/Piezo/Src \
 Application/Utils/Src \
+Application/Vboost/Src \
 Application/WirelessPwrTransfer/Src \
 Application/flash_controller/Src \
 Application/fwVersion/Src \

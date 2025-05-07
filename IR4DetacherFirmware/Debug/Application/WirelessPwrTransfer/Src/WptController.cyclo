@@ -1,2 +1,4 @@
-../Application/WirelessPwrTransfer/Src/WptController.c:24:6:WptControllerInit	1
-../Application/WirelessPwrTransfer/Src/WptController.c:29:6:WptSetCalibrationValue	1
+../Application/WirelessPwrTransfer/Src/WptController.c:30:6:WptControllerInit	1
+../Application/WirelessPwrTransfer/Src/WptController.c:38:6:WptSetCalibrationValue	1
+../Application/WirelessPwrTransfer/Src/WptController.c:43:6:WptControllerStartPwm	1
+../Application/WirelessPwrTransfer/Src/WptController.c:53:6:WptStopPwm	1

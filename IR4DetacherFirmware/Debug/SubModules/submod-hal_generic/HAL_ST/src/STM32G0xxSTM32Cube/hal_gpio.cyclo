@@ -1,3 +1,5 @@
+../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_ll_gpio.h:283:22:LL_GPIO_SetPinMode	1
+../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_ll_gpio.h:317:26:LL_GPIO_GetPinMode	1
 ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_ll_gpio.h:491:22:LL_GPIO_SetPinPull	1
 ../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_ll_gpio.h:747:26:LL_GPIO_ReadInputPort	1
 ../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_gpio.c:13:6:hal_gpio_init	1
@@ -8,4 +10,6 @@
 ../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_gpio.c:47:6:hal_gpio_set_output	1
 ../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_gpio.c:52:6:hal_gpio_toggle_output	1
 ../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_gpio.c:57:6:hal_gpio_set_pull	1
-../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_gpio.c:63:10:hal_gpio_read_port	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_gpio.c:61:6:hal_gpio_set_pin_mode	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_gpio.c:65:10:hal_gpio_get_pin_mode	1
+../SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/hal_gpio.c:71:10:hal_gpio_read_port	1

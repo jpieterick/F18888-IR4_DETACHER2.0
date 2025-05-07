@@ -12,12 +12,18 @@
 #include <stddef.h>
 #include "stm32g070xx.h"
 #include "pindefs.h"
+#include "VboostHandler.h"
 #if 0
 #include "scheduler_glue.h"
 #endif
 
-#define USE_RTT_FOR_DEBUGGING (1)
+//#define USE_RTT_FOR_DEBUGGING (1)
+#if USE_RTT_FOR_DEBUGGING
+
+#define DEBUG_MAIN (1)
 #define DEBUG_DEBOUNCE (1)
+
+#endif
 
 #define USING_STM32CUBEIDE (1)
 
@@ -57,6 +63,7 @@ void MX_TIM1_Init(void);
 
 #define VBOOST_CAL_PWM_FREQ (54000)
 #define VBOOST_ARR_VAL (100-1) // We want ARR to be 100-1 so that we can just enter the desired pwm duty cycle % into the channel capture and compare register
+#define VBOOST_DUTY_CYCLE (VboostDutyCycle)
 #define VBOOST_TIMER_FREQ (VBOOST_CAL_PWM_FREQ*(VBOOST_ARR_VAL+1))
 
 #define VBOOST_PRESCALER ((FREQ_APB1_HZ/VBOOST_TIMER_FREQ) -1)
@@ -65,16 +72,20 @@ void MX_TIM1_Init(void);
 // Setup the piezo PWM timer values.
 
 
-// Setup the wireless power transfer pwm. We want as 135Khz pwm frequency
-#define WPT_PWM_TIMER_FREQ (13500000)
+// Setup the wireless power transfer pwm. We want a 135Khz pwm frequency
+#define WPT_PWM_TIMER_FREQ (FREQ_APB1_HZ)
 #define WPT_PWM_FREQ (135000)
 #define WPT_PWM_PRESCALER ((FREQ_APB1_HZ/WPT_PWM_TIMER_FREQ) -1)
 #define WPT_PWM_ARR_VAL ((WPT_PWM_TIMER_FREQ / WPT_PWM_FREQ) -1)
 
+#define PWM_DEFAULT_DUTY_CYCLE (50)
 
-#define PIEZO_TIMER_CLOCK_FREQUENCY  FREQ_APB1_HZ
-#define PIEZO_PWM_TIMER_OUT_FREQ     (1000000)
-#define PIEZO_PWM_PRESCALER ((FREQ_APB1_HZ/VBOOST_TIMER_FREQ) -1)
+
+#define PIEZO_TIMER_CLOCK_FREQUENCY	FREQ_APB1_HZ
+#define PIEZO_PWM_TIMER_FREQ		(1000000)
+#define PIEZO_PWM_FREQ				(10000)
+#define PIEZO_PWM_ARR_VAL			((PIEZO_PWM_TIMER_FREQ/PIEZO_PWM_FREQ) -1)
+#define PIEZO_PWM_PRESCALER 		((PIEZO_TIMER_CLOCK_FREQUENCY/PIEZO_PWM_TIMER_FREQ) -1)
 
 #define PWM_TIMER_HZ_TO_PERIOD_COUNTS(desired_freq, prescale)  ((PIEZO_TIMER_CLOCK_FREQUENCY / prescale / desired_freq) + 1 /*+1 to top per ref manual*/)
 #define PWM_TIMER_DUTYCYCLE_TO_COUNTS(timerTop, dutyCycle/*percent as int (50%=50)*/)  	((uint16_t)((((uint32_t)timerTop+1/*+1 to top per ref manual*/) * dutyCycle / 100)))
@@ -94,7 +105,7 @@ void MX_TIM1_Init(void);
  *                           Timers
  * ***************************************************************/
 #define USING_BLOCKING_DELAY_TIMER (1)
-#define PWM_AUDIO_CLOCK_FREQUENCY_HZ     64000000.0
+#define PWM_AUDIO_CLOCK_FREQUENCY_HZ     54000000.0
 #define PWM_AUDIO_HZ_TO_PERIOD_COUNTS(f) ((uint16_t)(PWM_AUDIO_CLOCK_FREQUENCY_HZ / f))
 
 #ifdef USING_BLOCKING_DELAY_TIMER
@@ -127,7 +138,7 @@ void MX_TIM1_Init(void);
 // An alternative solution would be to use one of the STM32 peripheral timers 
 // (like TIM14) which has its own built-in prescale register to get its 
 // frequency low enough to meet our requirements.
-#define SCHED_INT_TMR_SCALING_FACTOR    64
+//#define SCHED_INT_TMR_SCALING_FACTOR    64
 
 // Max number of ms this macro can take is 524.  65535/(64000000/8/64/1000) == 524.28
 // !!!IMPORTANT!!! if this macro or the scaling factor ever changes, be sure to 
@@ -136,7 +147,7 @@ void MX_TIM1_Init(void);
 
 // This macro probably shouldn't be in periphdefs.h. Scheduler glue is probably the better place but to avoid having to clean up all uses of this macro
 // we'll alias this macro to the one in scheduler glue.
-#define SCHEDULER_TIMER_MS_TO_COUNTS(t) SCHGLUE_MS_TO_COUNTS(t)
+//#define SCHEDULER_TIMER_MS_TO_COUNTS(t) SCHGLUE_MS_TO_COUNTS(t)
 
 enum timer_id
 {

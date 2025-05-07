@@ -3,6 +3,7 @@
 "./Application/Piezo/Src/audio_controller.o"
 "./Application/Utils/Src/UtilDebounce.o"
 "./Application/Utils/Src/Utils.o"
+"./Application/Vboost/Src/VboostHandler.o"
 "./Application/WirelessPwrTransfer/Src/WptController.o"
 "./Application/flash_controller/Src/flash_controller_app.o"
 "./Application/flash_controller/Src/nvm_interface.o"

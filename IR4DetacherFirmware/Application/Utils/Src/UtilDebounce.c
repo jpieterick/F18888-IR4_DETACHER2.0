@@ -8,7 +8,7 @@
 #include "pindefs.h"
 #include "periphdefs.h"
 #include <stdint.h>
-#include <UtilDebounce.h>
+#include "UtilDebounce.h"
 #include "hal_gpio.h"
 #if USE_RTT_FOR_DEBUGGING && DEBUG_DEBOUNCE // Note that both of these should be #defined to 1 in periphdefs.h.
 #include "rtt_debug.h"
@@ -86,7 +86,7 @@ bool UtilDebounceCheckPinState(enum pin_id pinId,bool state2BeChecked)
 	{
 		// We did not find this pins port in the Ports2Debounce array
 #if USE_RTT_FOR_DEBUGGING && DEBUG_DEBOUNCE // Note that both of these should be #defined to 1 in periphdefs.h.
-		debug_rtt_printf("Pin id %i points to a port that is not in the Ports2Debounce array",pinId);
+		debug_rtt_printf("Pin id %i points to a port that is not in the Ports2Debounce array\r\n",pinId);
 #endif
 		while(1);
 	}

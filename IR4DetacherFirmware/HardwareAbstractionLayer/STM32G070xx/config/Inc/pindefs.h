@@ -12,6 +12,9 @@
 #include "stm32g0xx_hal_gpio.h"
 #include "periphdefs.h"
 
+#define BUTTON_PRESSED (0)
+#define BUTTON_RELEASED (1)
+
 // Pin Definition Enum.  MUST maintain same order as pin_defs[].
 typedef enum pin_id
 {

@@ -1,0 +1,4 @@
+../Application/Vboost/Src/VboostHandler.c:16:6:GetVBoostVboostPwmDutyCyclePctFromFlash	1
+../Application/Vboost/Src/VboostHandler.c:22:10:GetVboostPwmDutyCyclePct	1
+../Application/Vboost/Src/VboostHandler.c:27:6:VboostStartPWM	1
+../Application/Vboost/Src/VboostHandler.c:32:6:VboostStopPWM	1

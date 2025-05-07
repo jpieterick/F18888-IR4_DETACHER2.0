@@ -52,6 +52,10 @@
 #include "hal_timer.h"
 #include "hal_watchdog.h"
 #include "WptController.h"
+#include "periphdefs.h"
+#include "UtilDebounce.h"
+#include "VboostHandler.h"
+#include "audio_controller.h"
 
 /* USER CODE END Includes */
 
@@ -62,7 +66,9 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define LED_TIMEOUT_INTERVAL (100) // milliseconds
+#define LOOP_THROTTLE_INTERVAL (10) // milliseconds
+
+#define AUDIO_TASK_INTERVAL_MS (5)
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -96,10 +102,12 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
 	static uint32_t TickSinceLastExecution	= 0;
-	static uint32_t LastExecutionCount		= 0;
 
-	static bool Authorized        = false;
-	static bool ValidSdcIsPresent = false;
+	static bool Authorized			= false;
+	static bool ValidSdcIsPresent	= false;
+	static bool buttonPressed		= false;
+
+	bool chirp = true;
 
   /* USER CODE END 1 */
 
@@ -147,7 +155,12 @@ int main(void)
 
   MX_ADC1_Init();
 
+  // The Vboost duty cycle must be retrieved from flash before initializing the VBoost PWM timer.
+  GetVBoostVboostPwmDutyCyclePctFromFlash();
+
   hal_timer_init();
+
+
 
   WptControllerInit();
 
@@ -181,32 +194,102 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  static uint32_t LastLoopTick = 0;
+
+  static uint32_t TicksinceLastLoop = 0;
+
 
   // Turn on the red LED to indicate that we have power but we are not authorized.
   while (1)
   {
+	  // Get the number of milliseconds since the last trip through this loop:
+	  TicksinceLastLoop = hal_timer_get_ticks_since_count(LastLoopTick);
+
+	  // Get the current sys tick.
+	  LastLoopTick = hal_timer_get_systick();
+
 	  /* reset the WDT */
 	  hal_watchdog_reset();
 
-      TickSinceLastExecution = hal_timer_get_ticks_since_count(LastExecutionCount);
 
-	  if (LED_TIMEOUT_INTERVAL <= TickSinceLastExecution)
+	  ac_audio_controller((uint16_t) TicksinceLastLoop);
+
+      TickSinceLastExecution += TicksinceLastLoop;
+
+      UtilDebounceReadAndDebounceInputs();
+
+	  if (LOOP_THROTTLE_INTERVAL <= TickSinceLastExecution)
 	  {
+		  TickSinceLastExecution = 0;
 		  // Check for NFC activity
 
 		  // Check for IR input activity
 #if 0
 		  if ((true == IRCommsDetacherIsAuthorized()) && (true == ValidSdcIsPresent))
+#endif
 		  {
 			  /* reset the WDT */
 			  hal_watchdog_reset();
 
-			  // Debounce and check button input
-
-			  // Handle IR key output activity
-
-		  }
+			  // check debounced button and interrupt inputs
+			  if (false == buttonPressed)
+			  {
+			      // Check the User Button to see if it was just pressed.
+				  if (UtilDebounceCheckPinState(USER_BUTTON,BUTTON_PRESSED) == true)
+				  {
+#if USE_RTT_FOR_DEBUGGING && DEBUG_MAIN // Note that both of these are #defined to 1 in periphdefs.h.
+			debug_rtt_printf("main() The user button has been pressed.\r\n");
 #endif
+					  buttonPressed = true;
+
+					  // Activate the WPT PWM
+					  hal_timer_RunPwAtDutyCycle(TIMER_WPT_PWM, PWM_DEFAULT_DUTY_CYCLE);
+
+					  // Activate Vboost PWM
+					  VboostStartPWM();
+
+					  //hal_timer_RunPwAtDutyCycle(TIMER_VBOOST_CAL_PWM, PWM_DEFAULT_DUTY_CYCLE);
+
+					  // Activate Piezo PWM
+					  // hal_timer_RunPwAtDutyCycle(TIMER_PIEZO_PWM, PWM_DEFAULT_DUTY_CYCLE);
+					  // Do one chirp
+
+					  if (chirp == true)
+					  {
+					     ac_chirp(1);
+					     chirp = false;
+					  }
+					  else
+					  {
+						  ac_error_tone(1);
+						  chirp = true;
+					  }
+
+				  }
+			  }
+			  else
+			  {
+				  // Check the User Button to see if it was just release.
+				  if (UtilDebounceCheckPinState(USER_BUTTON,BUTTON_RELEASED) == true)
+				  {
+#if USE_RTT_FOR_DEBUGGING && DEBUG_MAIN // Note that both of these are #defined to 1 in periphdefs.h.
+			          debug_rtt_printf("main() The user button has been released.\r\n");
+#endif
+					  buttonPressed = false;
+
+					  // Stop the WPT PWM
+					  hal_timer_StopPwmOutput(TIMER_WPT_PWM);
+
+					  // Stop the Vboost PWM
+					  VboostStopPWM();
+
+					  // Stop the Piezo PWM
+					  hal_timer_StopPwmOutput(TIMER_PIEZO_PWM);
+
+				  }
+			  }
+			  // Handle IR key output activity
+		  }
 
 	  }
 

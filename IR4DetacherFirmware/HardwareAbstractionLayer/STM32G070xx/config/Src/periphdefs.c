@@ -26,16 +26,16 @@
 timer_config_t timer_defs[NUMBER_OF_TIMERS] =
 {
 		    //  timer,  	      type, 	  channel,    _16b_prescaler			timer_irq_cb
-			{   TIM1,       TIM_GEN_PURPOSE, TIMER_CH1,   0,						(void*)0,	PIEZO_PWM}, // TIMER_PIEZO_PWM
+			{   TIM1,       TIM_GEN_PURPOSE, TIMER_CH1,   PIEZO_PWM_PRESCALER,		(void*)0,	PIEZO_PWM}, // TIMER_PIEZO_PWM
 			{   TIM3,       TIM_GEN_PURPOSE, TIMER_CH1,   WPT_PWM_PRESCALER,      	(void*)0,	WPT_PWM}, // TIMER_WPT_PWM
-			{   TIM15,      TIM_GEN_PURPOSE, TIMER_CH1,   0,                   		(void*)0,	VBOOST_CAL_PWM}, // TIMER_VBOOST_CAL_PWM,
+			{   TIM15,      TIM_GEN_PURPOSE, TIMER_CH1,   VBOOST_PRESCALER,    		(void*)0,	VBOOST_CAL_PWM}, // TIMER_VBOOST_CAL_PWM,
 			{   TIM6,       TIM_BASIC,       TIMER_CH0,   BLOCKING_DELAY_PRESCALER, (void*)0,	NOT_USING_HW_PIN}, // TIMER_BLOCKING_DELAY,
 		  //{   TIM14,      TIM_GEN_PURPOSE, TIMER_CH1,   0,                   		(void*)0,	NOT_USING_HW_PIN}  // TIMER_COMMUNICATE_SHUTDOWN
 };
 
 const uint16_t TimerArrValue[NUMBER_OF_TIMERS] =
 {
-	0, // TIMER_PIEZO_PWM has a variable period (ARR).
+	PIEZO_PWM_ARR_VAL, // TIMER_PIEZO_PWM has a variable period (ARR). This is a default value for testing.
 	WPT_PWM_ARR_VAL, // TIMER_WPT_PWM,
 	VBOOST_ARR_VAL, // TIMER_VBOOST_CAL_PWM,
 	0, // TIMER_BLOCKING_DELAY isn't a pwm timer

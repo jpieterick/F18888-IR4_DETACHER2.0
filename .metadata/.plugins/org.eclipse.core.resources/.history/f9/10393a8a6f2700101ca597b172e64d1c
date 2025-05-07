@@ -1,0 +1,47 @@
+/***************************************************************************
+* Copyright © 2025 InVue Security Products, Charlotte, NC
+* All Rights Reserved.
+*
+*  File: WptController.c
+*
+*  Description: Code to handle the control of the Wireless Power Transfer
+*               (WPT) functionality.
+**
+****************************************************************************/
+#include "WptController.h"
+
+#define WPT_DEFAULT_DUTY_CYCLE (50)
+
+static uint16_t WptPercentDutyCycleTimes100 = WPT_DEFAULT_DUTY_CYCLE * 100;
+
+
+/*****************************************************************
+*   void WptControllerInit(void)
+*
+*   Description: This function initializes the Wireless Power Transfer
+*                Controller.
+*
+*    parameters: None.
+*
+* return values: None
+*
+* ****************************************************************/
+void WptControllerInit(void)
+{
+	// Get the Wireless Power Transfer percent duty cycle from flash
+	// TODO: setup WPT duty cycle storage and retrieval to/from flash.
+
+
+}
+
+bool WptSetCalibrationValue(uint16_t NewCalibrationValue)
+{
+	return false;
+}
+
+void WptControllerStartPwm(void)
+{
+	// 	Set the WPT PWM duty cycle and then start the PWM output.
+	hal_timer_RunPwAtDutyCycle(TIMER_WPT_PWM, (WptPercentDutyCycleTimes100));
+
+}

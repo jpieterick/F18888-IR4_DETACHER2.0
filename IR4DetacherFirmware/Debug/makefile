@@ -24,6 +24,7 @@ RM := rm -rf
 -include Application/fwVersion/Src/subdir.mk
 -include Application/flash_controller/Src/subdir.mk
 -include Application/WirelessPwrTransfer/Src/subdir.mk
+-include Application/Vboost/Src/subdir.mk
 -include Application/Utils/Src/subdir.mk
 -include Application/Piezo/Src/subdir.mk
 -include Application/NFC/Src/subdir.mk

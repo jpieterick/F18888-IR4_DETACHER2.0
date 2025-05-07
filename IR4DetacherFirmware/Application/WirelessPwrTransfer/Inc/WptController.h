@@ -31,4 +31,7 @@ void WptControllerInit(void);
 
 bool WptSetCalibrationValue(uint16_t NewCalibrationValue);
 
+void WptControllerStartPwm(void);
+
+void WptStopPwm(void);
 #endif /* WPTCONTROLLER_H_ */
