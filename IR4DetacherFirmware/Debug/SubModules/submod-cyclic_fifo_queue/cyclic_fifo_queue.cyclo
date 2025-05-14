@@ -1,0 +1,5 @@
+../SubModules/submod-cyclic_fifo_queue/cyclic_fifo_queue.c:5:6:cyclic_fifo_queue_flush	1
+../SubModules/submod-cyclic_fifo_queue/cyclic_fifo_queue.c:15:14:cyclic_fifo_queue_add_item	5
+../SubModules/submod-cyclic_fifo_queue/cyclic_fifo_queue.c:51:14:cyclic_fifo_queue_get_item	3
+../SubModules/submod-cyclic_fifo_queue/cyclic_fifo_queue.c:88:14:cyclic_fifo_queue_slots_remaining	2
+../SubModules/submod-cyclic_fifo_queue/cyclic_fifo_queue.c:107:14:cyclic_fifo_queue_slots_used	2

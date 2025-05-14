@@ -56,6 +56,8 @@
 #include "UtilDebounce.h"
 #include "VboostHandler.h"
 #include "audio_controller.h"
+#include "ir_key_glue.h"
+#include "rtt_debug.h"
 
 /* USER CODE END Includes */
 
@@ -167,9 +169,9 @@ int main(void)
 #if 0
     // TODO: decide what to do with these initialization function call:   
 	hal_interrupts_enable();
-	
-    IRKeyHandlerInit(UART_IR);     // initializes the IR key interface
 #endif
+	
+	irkey_gl_init(IR_COMM_UART_INDX);
 
 #if 0
 	// Call initialization functions setup in the Device COnfiguration Tool.

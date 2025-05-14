@@ -1,19 +1,3 @@
-/** @file flash_controller_app.c
- *  @brief Application layer wrapper for the flash controller module
- *
- *  @details
- *  To Use:
-
- *  Assumptions made:
- *
- *
- *  @author Nick M
- *  @bug No known bugs.
- *
- *  InVue Security Products
- *  Copyright 2022
- */
-
 /***************************************************************************
 INCLUDES
 ****************************************************************************/
@@ -25,9 +9,9 @@ INCLUDES
 #include "hal_flash.h"
 #include "hal_interrupts.h"
 #include "hal_watchdog.h"
-#include "flash_controller_app.h"
+#include "flash_glue.h"
 #include "flash_controller.h"
-#include "rtt_debug.h"
+//#include "battery_glue.h"
 
 /****************************************************************************
                             TYPEDEFS
@@ -82,6 +66,7 @@ void flash_erase_function(uint8_t* start, unsigned int length_minus_one)
     hal_flash_erase(start, length_minus_one);
     hal_watchdog_reset();
     hal_interrupts_enable();
+	//battery_life_event(BATTERY_LIFE_EVENT_FLASH_ERASE);
 }
 
 /** @brief fcul_initialize_flash_controller
@@ -91,14 +76,14 @@ void flash_erase_function(uint8_t* start, unsigned int length_minus_one)
  */
 void fcul_initialize_flash_controller(void)
 {
-	fc.sector_group_length_minus_one = FLASH_SECTOR_SIZE - 1;
-	fc.minimum_writeable_bytes       = FLASH_MIN_WRITE_BYTES;
+	fc.sector_group_length_minus_one = hal_flash_get_flash_pg_size() - 1;
+	fc.minimum_writeable_bytes       = hal_flash_get_minimum_flash_write_size();
 	fc.bytes_per_key                 = 1;
 	fc.first_sector_group_start      = (uint8_t*)&_NONVOLATILE_STORAGE_START;
 	/** Once I enabled -0s build option i started to get out of bounds warning on the following code so let's ignore it. It doesn't pop up in -0g.  **/
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Warray-bounds"
-	fc.second_sector_group_start     = (uint8_t*)(&_NONVOLATILE_STORAGE_START + FLASH_SECTOR_SIZE);
+	fc.second_sector_group_start     = (uint8_t*)(&_NONVOLATILE_STORAGE_START + hal_flash_get_flash_pg_size());
 #pragma GCC diagnostic pop
 	fc.flash_write_callback          = flash_write_function;
 	fc.flash_erase_callback          = flash_erase_function;
@@ -120,7 +105,12 @@ void fcul_initialize_flash_controller(void)
  */
 size_t fcul_write(_tFlash_Key key, const uint8_t *value, size_t value_size)
 {
-    return flash_controller_write(&fc, (uint8_t*)&key, value, value_size);
+	if( fcul_is_ready() )
+	{
+		return flash_controller_write(&fc, (uint8_t*)&key, value, value_size);
+		//battery_life_event(BATTERY_LIFE_EVENT_FLASH_WRITE);
+	}
+	return FLASH_WRITE_ERROR;
 }
 
 /** @brief fcul_read
@@ -132,7 +122,11 @@ size_t fcul_write(_tFlash_Key key, const uint8_t *value, size_t value_size)
  */
 size_t fcul_read(_tFlash_Key key, uint8_t *value, size_t value_size)
 {
-    return flash_controller_read(&fc, (uint8_t*)&key, value, value_size);
+	if( fcul_is_ready() )
+	{
+		return flash_controller_read(&fc, (uint8_t*)&key, value, value_size);
+	}
+	return FLASH_KEY_NOT_FOUND;
 }
 
 /** @brief fcul_is_ready

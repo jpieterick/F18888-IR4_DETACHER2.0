@@ -15,6 +15,21 @@
 #define BUTTON_PRESSED (0)
 #define BUTTON_RELEASED (1)
 
+#define RXD_MODE_FOR_SLEEP            LL_GPIO_MODE_INPUT
+#define RXD_MODE_FOR_RUN              LL_GPIO_MODE_INPUT
+#define RXEN_MODE_FOR_SLEEP           LL_GPIO_MODE_INPUT
+#define RXEN_MODE_FOR_RUN             LL_GPIO_MODE_INPUT
+#define TXD_MODE_FOR_IDLE_SLEEP       LL_GPIO_MODE_INPUT
+#define TXD_MODE_ACTIVE               LL_GPIO_MODE_OUTPUT
+#define PIEZO_MODE_ACTIVE             LL_GPIO_MODE_OUTPUT
+#define PIEZO_MODE_IDLE               LL_GPIO_MODE_INPUT
+
+/*
+ * LL_GPIO_MODE_INPUT
+  *         @arg @ref LL_GPIO_MODE_OUTPUT
+  *         @arg @ref LL_GPIO_MODE_ALTERNATE
+  *         @arg @ref LL_GPIO_MODE_ANALOG
+ */
 // Pin Definition Enum.  MUST maintain same order as pin_defs[].
 typedef enum pin_id
 {

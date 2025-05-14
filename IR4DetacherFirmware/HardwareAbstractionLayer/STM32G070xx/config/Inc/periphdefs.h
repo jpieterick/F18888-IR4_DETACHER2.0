@@ -245,9 +245,6 @@ enum adc_id
 
 #if defined USE_HAL_UART
 
-void uart_driver_init_this_uart(uint8_t thisUartNumber);
-
-
 // Setup the #defines for the UART index constants. Note that #defines are being used instead of an enum
 // because these constants are used in #ifdef statements as well as to index into arrays. These index
 // constants must either be assigned in numerical order or the #ifdef below must be re-arranged.
@@ -268,7 +265,7 @@ void uart_driver_init_this_uart(uint8_t thisUartNumber);
 
 #define USING_UART1
 
-#define IR_COMM_UART  (UART1INDX)
+#define IR_COMM_UART_INDX  (UART1INDX)
 
 //#define USING_UART2
 
@@ -329,7 +326,7 @@ typedef struct
 	uart_hal_t  uart_hal;
 } uart_config_t;
 
-extern uart_config_t const uart_defs[NUMBER_OF_UARTS];
+extern uart_config_t uart_defs[NUMBER_OF_UARTS];
 
 
 #endif

@@ -23,18 +23,19 @@ OBJCOPY_BIN :=
 
 # Every subdirectory with source files must be described here
 SUBDIRS := \
-Application/NFC/Src \
 Application/Piezo/Src \
 Application/Utils/Src \
 Application/Vboost/Src \
 Application/WirelessPwrTransfer/Src \
 Application/flash_controller/Src \
 Application/fwVersion/Src \
+Application/ir_key_glue \
 Core/Src \
 Core/Startup \
 Drivers/STM32G0xx_HAL_Driver/Src \
 HardwareAbstractionLayer/STM32G070xx/config/Src \
 HardwareAbstractionLayer/STM32G070xx \
+SubModules/submod-cyclic_fifo_queue \
 SubModules/submod-flash_controller \
 SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube/drivers \
 SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube \

@@ -1,6 +1,0 @@
-../Application/flash_controller/Src/flash_controller_app.c:63:6:flash_write_function	1
-../Application/flash_controller/Src/flash_controller_app.c:78:6:flash_erase_function	1
-../Application/flash_controller/Src/flash_controller_app.c:92:6:fcul_initialize_flash_controller	1
-../Application/flash_controller/Src/flash_controller_app.c:121:8:fcul_write	1
-../Application/flash_controller/Src/flash_controller_app.c:133:8:fcul_read	1
-../Application/flash_controller/Src/flash_controller_app.c:143:6:fcul_is_ready	1

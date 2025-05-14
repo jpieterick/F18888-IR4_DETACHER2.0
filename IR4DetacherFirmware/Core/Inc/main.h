@@ -91,8 +91,6 @@ void Error_Handler(void);
 #define IR_UART_RX_GPIO_Port GPIOA
 #define CHARGE_EN_Pin GPIO_PIN_11
 #define CHARGE_EN_GPIO_Port GPIOA
-#define BATTERY_ENABLE_Pin GPIO_PIN_15
-#define BATTERY_ENABLE_GPIO_Port GPIOA
 #define NFC_POWER_ENABLE_Pin GPIO_PIN_6
 #define NFC_POWER_ENABLE_GPIO_Port GPIOB
 #define NFC_FD_INT_Pin GPIO_PIN_7

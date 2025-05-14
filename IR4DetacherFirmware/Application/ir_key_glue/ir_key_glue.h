@@ -42,7 +42,7 @@
 *****************************************************************************/
 bool factory_reset(void);
 void irKey_diff_serial_and_update( uint8_t *_sn );
-void irkey_gl_init(enum uart_id UART_IR_KEY);
+void irkey_gl_init(uint8_t key_uart);
 bool irkey_gl_is_inactive(void);
 void irkey_gl_key_handler(void);
 void irKey_gl_HandleTimers( uint32_t elapsed_ms );
