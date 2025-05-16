@@ -30,6 +30,8 @@ Application/WirelessPwrTransfer/Src \
 Application/flash_controller/Src \
 Application/fwVersion/Src \
 Application/ir_key_glue \
+Application/uartTemp \
+Application/uarts_glue/Src \
 Core/Src \
 Core/Startup \
 Drivers/STM32G0xx_HAL_Driver/Src \

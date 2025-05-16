@@ -1,0 +1,4 @@
+../Application/uarts_glue/Src/uarts_glue.c:32:18:uart_gl_GetUARTDriverPtr	2
+../Application/uarts_glue/Src/uarts_glue.c:45:6:uart_gl_init_this_uart	2
+../Application/uarts_glue/Src/uarts_glue.c:65:6:uart_gl_init_all_uarts	2
+../Application/uarts_glue/Src/uarts_glue.c:114:6:uart_gl_Uart_is_inactive	6

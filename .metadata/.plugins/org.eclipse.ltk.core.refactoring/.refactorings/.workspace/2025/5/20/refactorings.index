@@ -1,0 +1,6 @@
+1747228440265	Delete resource 'IR4DetacherFirmware/Application/IRComms/Inc'
+1747228454483	Delete resource 'IR4DetacherFirmware/Application/IRComms/Src'
+1747228464953	Delete resource 'IR4DetacherFirmware/Application/IRComms'
+1747229432055	Delete resource 'IR4DetacherFirmware/HardwareAbstractionLayer/STM32G070xx/Inc'
+1747229437799	Delete resource 'IR4DetacherFirmware/HardwareAbstractionLayer/STM32G070xx/Src'
+1747233829961	Delete resource 'IR4DetacherFirmware/Application/uarts_glue/Src/ir_key_glue.c'

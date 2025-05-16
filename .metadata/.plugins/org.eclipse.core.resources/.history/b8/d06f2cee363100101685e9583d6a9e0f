@@ -1,0 +1,131 @@
+/*
+ * uarts_glue.c
+ *
+ *  Created on: Feb 7, 2023
+ *      Author: jpieterick
+ */
+#include "uarts_glue.h"
+#include "AppUart.h"
+#include "AppUartDriver.h"
+
+#define RX_BUF_SIZE (64)
+#define TX_BUF_SIZE (64)
+
+// The following externs are defined in hal_uart.c
+extern USART_TypeDef *const UART_ModulePtr[NUMBER_OF_UARTS];
+extern uart_config_t uart_defs[NUMBER_OF_UARTS];
+
+static AppUartDriver_t *UartDriverPtr[NUMBER_OF_UARTS] =
+{
+	(void*)0,
+	(void*)0,
+};
+
+typedef struct Usart_buffers_t
+{
+	uint8_t rx_buf[RX_BUF_SIZE];
+	uint8_t tx_buf[TX_BUF_SIZE];
+} Usart_buffers;
+
+static volatile Usart_buffers UsartBufs[NUMBER_OF_UARTS];
+
+AppUartDriver_t *uart_gl_GetUARTDriverPtr(uint8_t uartIndx)
+{
+	if (NUMBER_OF_UARTS > uartIndx)
+	{
+	   return UartDriverPtr[uartIndx];
+	}
+	else
+	{
+	   // uartIndex is greater than the number of active UARTS!? That ain't right!
+	   return NULL;
+	}
+}
+
+void uart_gl_init_this_uart(uart_indx_t uartIndx)
+{
+
+	UartDriverPtr[uartIndx] = AppUartDriver_init(uart_defs[uartIndx].uart_bus_num,
+			                          (uart_hal_t*)&uart_defs[uartIndx].uart_hal,
+					                  (uint8_t [])UsartBufs[uartIndx].rx_buf,
+									  RX_BUF_SIZE,
+									  (uint8_t [])UsartBufs[uartIndx].tx_buf,
+									  TX_BUF_SIZE);
+
+	if (uartIndx == IR_INTERFACE_UART_INDEX)
+	{
+		// disable TX on the IR interface UART
+		AppUart_disable_tx(uartIndx);
+	}
+
+	// Enable RX on the UART
+	AppUart_enable_rx(uartIndx);
+}
+
+void uart_gl_init_all_uarts(void)
+{
+
+	for(uart_indx_t uartIndx = UART1INDX;uartIndx < NUMBER_OF_UARTS;uartIndx++)
+	{
+		uart_gl_init_this_uart(uartIndx);
+	}
+
+} //  uart_gl_init_uarts(void)
+
+#ifdef USING_CHANGE_BAUDRATE_FUNCTIONS
+/*
+ * Function: hal_uart_change_baudrate_NclockHz()
+ * Description: Calculate  and change the baud rate value in the UARTs BRR register using the supplied UART baud rate and supplied clock HZ values unless:
+ *              When the supplied target baud rate is 0, this function will use the baud rate from the uart_defs structure.
+ *              When the supplied New Clock Hz is 0, this function will use the module_clock_hz from the uart_defs structure.
+ */
+void uart_gl_change_baudrate_and_clockHz(uart_indx_t uartIndx,uint32_t targetBaudRate,uint32_t TargetClockHz)
+{
+
+	uint32_t newTargetBaudRate = targetBaudRate;
+	uint32_t NewClockHz = TargetClockHz;
+
+	if (0 == targetBaudRate)
+	{
+		newTargetBaudRate = uart_defs[uartIndx].uart_hal.target_baud_bps;
+	}
+
+	if (0 == TargetClockHz)
+	{
+		NewClockHz = uart_defs[uartIndx].uart_hal.module_clock_hz;
+	}
+	/* disable the UART */
+	UART_ModulePtr[uartIndx]->CR1 &= ~USART_CR1_UE;
+
+	/* configure baud rate */
+	if (UART_TYPE_LPUART == uart_defs[uartIndx].uart_hal.uart_type)
+	{
+		UART_ModulePtr[uartIndx]->BRR = (NewClockHz * 256u) / newTargetBaudRate;
+	}
+	else
+	{
+		UART_ModulePtr[uartIndx]->BRR = NewClockHz / newTargetBaudRate;
+	}
+
+	/* Re-enable the UART */
+	UART_ModulePtr[uartIndx]->CR1 |= USART_CR1_UE;
+}
+#endif
+bool uart_gl_Uart_is_inactive(uart_indx_t uartIndx)
+{
+	bool retVal = true;
+
+	if ((void*)0 != UartDriverPtr[uartIndx])
+	{
+		retVal = ((0 == AppUart_tx_bytes_remaining(UartDriverPtr[uartIndx])) && /* no bytes in the Tx queue                                 */
+				  (0 == AppUart_rx_bytes_remaining(UartDriverPtr[uartIndx])) && /* no bytes in the Rx queue                                 */
+				  //(!AppUart_is_transmitter_enabled(uart_defs[uartIndx])) && /* UART transmitter disabled                                */
+				  //( AppUart_is_receiver_enabled(uart_defs[uartIndx]))    && /* UART receiver is enabled (front porch delay has expired) */
+				  (!AppUart_is_receiving(UartDriverPtr[uartIndx]))           && /* UART is not actively receiving                           */
+				  (!AppUart_is_transmitting(uartIndx)) );                       /* UART is not actively transmitting    */
+	}
+
+
+	return retVal;
+}
+

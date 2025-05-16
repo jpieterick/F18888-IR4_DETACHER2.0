@@ -3,4 +3,4 @@
 ../HardwareAbstractionLayer/STM32G070xx/hardware_abstraction_layer.c:29:6:alarm_status_led_ctrl	1
 ../HardwareAbstractionLayer/STM32G070xx/hardware_abstraction_layer.c:35:6:should_box_led_show_security	1
 ../HardwareAbstractionLayer/STM32G070xx/hardware_abstraction_layer.c:40:9:what_is_my_product_family	1
-../HardwareAbstractionLayer/STM32G070xx/hardware_abstraction_layer.c:46:9:what_is_my_product_id	1
+../HardwareAbstractionLayer/STM32G070xx/hardware_abstraction_layer.c:45:9:what_is_my_product_id	1

@@ -1,0 +1,65 @@
+/**********************************
+ * File: uart_driver.h
+ * Invue Security Products
+ * Copyright 2020
+ **********************************/
+
+#ifndef __uart_driver_H
+#define __uart_driver_H
+
+#ifdef __cplusplus
+ extern "C" {
+#endif
+
+#include "periphdefs.h"
+
+// Include this definition in periphdefs.h
+#if defined USE_HAL_UART
+#include <stdint.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include "pindefs.h"
+#include "periphdefs.h"
+#include "cyclic_fifo_queue.h"
+#include <AppUart.h>
+
+//#define TESTING_UARTS
+
+typedef struct
+{
+	uart_hal_t*   				uart_hal;
+	uint8_t*                    rx_buf;
+	uint8_t*                    tx_buf;
+	cyclic_fifo_queue_struct    rx_queue;
+	cyclic_fifo_queue_struct    tx_queue;
+} uart_driver_t;
+
+volatile uart_driver_t* uart_driver_init(
+	uint8_t     uart_bus_num,
+	uart_hal_t* uart_hal,
+	uint8_t*    rx_buf,
+	size_t      rx_buf_size,
+	uint8_t*    tx_buf,
+	size_t      tx_buf_size);
+
+#ifdef TESTING_UARTS
+void uarta_buffer_a_test_byte(uint8_t byte_rx);
+#endif
+
+unsigned int uart_driver_byte_available(uart_driver_t *inst, uint8_t *byte);
+unsigned int uart_driver_tx_bytes_remaining(uart_driver_t *inst);
+unsigned int uart_driver_rx_bytes_remaining(uart_driver_t *inst);
+unsigned int uart_driver_tx_bytes_available(uart_driver_t *inst);
+void uart_driver_tx_add_byte(uart_driver_t *inst, uint8_t const *byte);
+bool uart_driver_is_transmitter_enabled(uart_driver_t *inst);
+bool uart_driver_is_receiver_enabled(uart_driver_t *inst);
+bool uart_driver_is_receiving(uart_driver_t *inst);
+bool uart_driver_is_transmitting(uart_indx_t uartIndx);
+void uart_driver_start_transmit_if_stopped(uart_indx_t uartIndx);
+
+#endif  // USE_HAL_UART
+
+#ifdef __cplusplus
+}
+#endif
+#endif // __uart_driver_H

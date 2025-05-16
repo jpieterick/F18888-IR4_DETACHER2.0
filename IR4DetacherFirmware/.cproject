@@ -14,7 +14,7 @@
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactExtension="elf" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug" cleanCommand="rm -rf" description="" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.697366627" name="Debug" parent="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug">
+				<configuration artifactExtension="elf" artifactName="F1800${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug" cleanCommand="rm -rf" description="" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.697366627" name="Debug" parent="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug">
 					<folderInfo id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.697366627." name="/" resourcePath="">
 						<toolChain id="com.st.stm32cube.ide.mcu.gnu.managedbuild.toolchain.exe.debug.1356288796" name="MCU ARM GCC" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.toolchain.exe.debug">
 							<option id="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.target_mcu.543015263" name="MCU" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.target_mcu" useByScannerDiscovery="true" value="STM32G070CBTx" valueType="string"/>
@@ -52,6 +52,9 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/SubModules/submod_segger-RTT-debugging/SEGGER_RTT}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/SubModules/submod_segger-RTT-debugging}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Application/Vboost/Inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Application/ir_key_glue}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Application/uarts_glue/Inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/HardwareAbstractionLayer/STM32G070xx/Inc}&quot;"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.assembler.input.340299416" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.assembler.input"/>
 							</tool>
@@ -71,7 +74,7 @@
 									<listOptionValue builtIn="false" value="../Drivers/CMSIS/Include"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Application/flash_controller}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Application/fwVersion/Inc}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Application/IRComms/Inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Application/ir_key_glue}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Application/NFC/Inc}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Application/Piezo/Inc}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Application/Vboost/Inc}&quot;"/>
@@ -90,6 +93,8 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Application/flash_controller/Inc}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/SubModules/submod_segger-RTT-debugging/SEGGER_RTT}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/SubModules/submod_segger-RTT-debugging}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Application/uarts_glue/Inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Application/uartTemp}&quot;"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.1294586466" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
 							</tool>
@@ -116,25 +121,27 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="app_ir_uart_hal.c|invue_ir_key_app.c|DetacherIRKeyComsHandler.c|DetacherDeviceIRComsHandler.c" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Application/IRComms/Src"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Application/NFC/Src"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Application/Piezo/Src"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Application/Utils/Src"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Application/Vboost/Src"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Application/WirelessPwrTransfer/Inc"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Application/WirelessPwrTransfer/Src"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Application/flash_controller/Src"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Application/fwVersion/Src"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Core"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
-						<entry excluding="config/Src" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="HardwareAbstractionLayer/STM32G070xx"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="HardwareAbstractionLayer/STM32G070xx/config/Src"/>
-						<entry excluding="flash_controller_unit_tests.c|windows_x86_executable_test.c|windows_x86" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="SubModules/submod-flash_controller"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="SubModules/submod-ir_comms"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="SubModules/submod_segger-RTT-debugging/DebugWrapper"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="SubModules/submod_segger-RTT-debugging/SEGGER_RTT/RTT"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="SubModules/submod_segger-RTT-debugging/SEGGER_RTT/Syscalls"/>
+						<entry excluding="config/Src" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="HardwareAbstractionLayer/STM32G070xx"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="SubModules/submod_segger-RTT-debugging/SEGGER_RTT/RTT"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Application/Piezo/Src"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="SubModules/submod-ir_comms"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Application/uartTemp"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="HardwareAbstractionLayer/STM32G070xx/config/Src"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="SubModules/submod-cyclic_fifo_queue"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Application/fwVersion/Src"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="SubModules/submod_segger-RTT-debugging/DebugWrapper"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Application/uarts_glue/Src"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Application/ir_key_glue"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Application/WirelessPwrTransfer/Src"/>
+						<entry excluding="hal_uart.c|drivers/uart_driver.c" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="SubModules/submod-hal_generic/HAL_ST/src/STM32G0xxSTM32Cube"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Application/Vboost/Src"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Core"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Application/Utils/Src"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Application/WirelessPwrTransfer/Inc"/>
+						<entry excluding="flash_controller_unit_tests.c|windows_x86_executable_test.c|windows_x86" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="SubModules/submod-flash_controller"/>
+						<entry excluding="flash_controller_app.c|nvm_interface.c" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Application/flash_controller/Src"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -188,6 +195,9 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/SubModules/submod_segger-RTT-debugging/SEGGER_RTT}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/SubModules/submod_segger-RTT-debugging}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Application/Vboost/Inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Application/ir_key_glue}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Application/uarts_glue/Inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/HardwareAbstractionLayer/STM32G070xx/Inc}&quot;"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.assembler.input.626754750" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.assembler.input"/>
 							</tool>
@@ -225,6 +235,9 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/SubModules/submod_segger-RTT-debugging/SEGGER_RTT}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/SubModules/submod_segger-RTT-debugging}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Application/Vboost/Inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Application/ir_key_glue}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Application/uarts_glue/Inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/HardwareAbstractionLayer/STM32G070xx/Inc}&quot;"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.1645250384" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
 							</tool>
@@ -252,12 +265,11 @@
 					</folderInfo>
 					<sourceEntries>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="HardwareAbstractionLayer/STM32G070xx/config/Src"/>
-						<entry excluding="app_ir_uart_hal.c|invue_ir_key_app.c|DetacherIRKeyComsHandler.c|DetacherDeviceIRComsHandler.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Application/IRComms/Src"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Application/fwVersion/Src"/>
-						<entry excluding="HAL_Silabs|HAL_ST/src/STM32G0xxSTM32Cube/drivers/cec_driver.c|HAL_ST/src/STM32G0xx|HAL_ST/src/STM32G0xxSTM32Cube/drivers/spi_driver.c|HAL_ST/src/STM32WLEx|HAL_ST/src/STM32G0xxSTM32Cube/drivers/i2c_driver.c|HAL_GD32|HAL_ST/src/STM32G0xxSTM32Cube/SystemClock.c|HAL_ST/src/STM32L0xx" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="SubModules/submod-hal_generic"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Application/ir_key_glue"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Application/WirelessPwrTransfer/Src"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Application/NFC/Src"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Core"/>
+						<entry excluding="HAL_ST/src/STM32G0xxSTM32Cube/hal_uart.c|HAL_ST/src/STM32G0xxSTM32Cube/drivers/uart_driver.c|HAL_Silabs|HAL_ST/src/STM32G0xxSTM32Cube/drivers/cec_driver.c|HAL_ST/src/STM32G0xx|HAL_ST/src/STM32G0xxSTM32Cube/drivers/spi_driver.c|HAL_ST/src/STM32WLEx|HAL_ST/src/STM32G0xxSTM32Cube/drivers/i2c_driver.c|HAL_GD32|HAL_ST/src/STM32G0xxSTM32Cube/SystemClock.c|HAL_ST/src/STM32L0xx" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="SubModules/submod-hal_generic"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Application/WirelessPwrTransfer/Inc"/>
 						<entry excluding="flash_controller_unit_tests.c|windows_x86_executable_test.c|windows_x86" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="SubModules/submod-flash_controller"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="SubModules/submod-ir_comms"/>
@@ -283,5 +295,12 @@
 			<autodiscovery enabled="false" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 	</storageModule>
-	<storageModule moduleId="refreshScope"/>
+	<storageModule moduleId="refreshScope" versionNumber="2">
+		<configuration configurationName="Debug">
+			<resource resourceType="PROJECT" workspacePath="/IR4DetacherFirmware"/>
+		</configuration>
+		<configuration configurationName="Release">
+			<resource resourceType="PROJECT" workspacePath="/IR4DetacherFirmware"/>
+		</configuration>
+	</storageModule>
 </cproject>

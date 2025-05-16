@@ -1,0 +1,537 @@
+/**********************************
+ * File: hal_uart.c
+ * Invue Security Products
+ * Copyright 2020
+ **********************************/
+
+#include "hal_uart.h"
+#include "usart.h"
+
+#if defined USE_HAL_UART
+
+#include "stm32g0xx_hal.h"
+
+extern UART_HandleTypeDef huart1;
+
+#ifdef UART2INDX
+extern UART_HandleTypeDef huart2;
+#endif
+
+#ifdef UART3INDX
+extern UART_HandleTypeDef huart3;
+#endif
+
+#ifdef UART4INDX
+extern UART_HandleTypeDef huart4;
+#endif
+
+/* define function pointers to UART Tx/Rx functions */
+static uint8_t (*usart1_transmit_ready_callback)  (uint8_t* byte_to_tx) = (void*)0;
+static void    (*usart1_byte_received_callback)   (uint8_t byte_in)     = (void*)0;
+static uint8_t (*usart2_transmit_ready_callback)  (uint8_t* byte_to_tx) = (void*)0;
+static void    (*usart2_byte_received_callback)   (uint8_t byte_in)     = (void*)0;
+#ifdef LPUART1
+static uint8_t (*lpuart1_transmit_ready_callback) (uint8_t* byte_to_tx) = (void*)0;
+static void    (*lpuart1_byte_received_callback)  (uint8_t byte_in)     = (void*)0;
+#endif
+
+/* define blocking delay callbacks used to delay after transmitting and before
+ * re-enabling the UART receiver
+ */
+static blocking_callback usart1_blocking_delay = (void*)0;
+static blocking_callback usart2_blocking_delay = (void*)0;
+#ifdef LPUART1
+static blocking_callback lpuart1_blocking_delay = (void*)0;
+#endif
+
+/* uart_mode_t is typically defined in periphdefs.h and can take the following values:
+ *
+ *     ONE_WIRE for one pin, one wire, with external pullup.
+ *
+ *     TWO_WIRE for two pins and two wires.
+ *
+ *     TWO_PINS_ONE_WIRE for two pins and one wire.
+ *
+ *     ONE_WIRE_NO_EXTERNAL_PULLUP for one pin, one wire, but NO external pullup.
+ *                                 Note that this enumeration exists because 
+ *                                 the uarts' HDSEL bit does not work unless 
+ *                                 there is an external pullup, and OnePOD does 
+ *                                 not have an external pullup.  So instead of 
+ *                                 using the HDSEL bit, this configuration uses 
+ *                                 the SWAP bit to manually switch the pin 
+ *                                 between Tx and Rx.  It is possible that this 
+ *                                 configuration may also work with products 
+ *                                 that were already using ONE_WIRE, however, 
+ *                                 we added this extra enumeration just in 
+ *                                 case, so that we don't accidentally cause 
+ *                                 problems with those other existing products 
+ *                                 (Vertical Sensor).  Perhaps in the future, 
+ *                                 with some testing, we can collapse this 
+ *                                 enumeration and the ONE_WIRE enumeration 
+ *                                 into a single enumeration that works for 
+ *                                 everything.
+ */
+static uart_mode_t usart1_mode  = 0;
+static uart_mode_t usart2_mode  = 0;
+#ifdef LPUART1
+static uart_mode_t lpuart1_mode = 0;
+#endif
+
+/* static functions */
+static void uart_irq_handler(USART_TypeDef* uart_module);
+
+
+
+void hal_uartA_callback_init(uint8_t (*tx_ready)     (uint8_t* byte_to_tx),
+			                 void    (*byte_received)(uint8_t  byte_in))
+{
+	usart1_transmit_ready_callback = tx_ready;
+	usart1_byte_received_callback  = byte_received;
+}
+
+void hal_uartB_callback_init(uint8_t (*tx_ready)     (uint8_t* byte_to_tx),
+			                 void    (*byte_received)(uint8_t  byte_in))
+{
+	usart2_transmit_ready_callback = tx_ready;
+	usart2_byte_received_callback  = byte_received;
+}
+
+#ifdef LPUART1
+void hal_uartC_callback_init(uint8_t (*tx_ready)     (uint8_t* byte_to_tx),
+			                 void    (*byte_received)(uint8_t  byte_in))
+{
+	lpuart1_transmit_ready_callback = tx_ready;
+	lpuart1_byte_received_callback  = byte_received;
+}
+#endif
+
+void hal_uart_init(uart_hal_t* uart_hal)
+{
+#ifdef USING_HAL_UART_INIT
+	if (USART1 == uart_hal->uart_module)
+	{
+		MX_USART1_UART_Init();
+
+		hal_uart_handle_ptr[UART1INDX] = &huart1;
+	}
+#ifdef UART2INDX
+	else if (USART2 == uart_hal->uart_module)
+	{
+		MX_USART2_UART_Init();
+
+		hal_uart_handle_ptr[UART2INDX] = &huart2;
+	}
+#endif
+
+#ifdef UART3INDX
+	else if (USART3 == uart_hal->uart_module)
+	{
+		MX_USART3_UART_Init();
+
+		hal_uart_handle_ptr[UART3INDX] = &huart3;
+	}
+#endif
+
+#ifdef UART4INDX
+	else if (USART4 == uart_hal->uart_module)
+	{
+		MX_USART4_UART_Init();
+
+		hal_uart_handle_ptr[UART4INDX] = &huart4;
+	}
+#endif
+
+
+	/* enable the UART */
+	uart_hal->uart_module->CR1 |= USART_CR1_UE;
+
+	if (USART1 == uart_hal->uart_module)
+	{
+		usart1_blocking_delay = uart_hal->blocking_delay;
+		NVIC_EnableIRQ(USART1_IRQn);
+	}
+	else if (USART2 == uart_hal->uart_module)
+	{
+		usart2_blocking_delay = uart_hal->blocking_delay;
+		NVIC_EnableIRQ(USART2_IRQn);
+	}
+
+
+	//TODO: Continue working on setting up the blocking delay after TX.
+
+
+
+	// TODO: add code to handle a blocking detay for USART3 and USART4
+#ifdef LPUART1
+	else if (LPUART1 == uart_hal->uart_module)
+	{
+		lpuart1_blocking_delay = uart_hal->blocking_delay;
+
+        /* No USART3 or 4 on some processors, so define this here to avoid a
+         * compiler error.
+         */
+        #ifndef USART3_4_LPUART1_IRQn
+            #define USART3_4_LPUART1_IRQn LPUART1_IRQn
+        #endif
+
+		NVIC_EnableIRQ(USART3_4_LPUART1_IRQn);
+	}
+#endif
+}
+
+void hal_uart_deinit(uart_hal_t* uart_hal)
+{
+	// Call the uart de-initialization function produced by the STM32 Hardware Configuration tool:
+	if (USART1 == uart_hal->uart_module)
+	{
+		HAL_UART_DeInit(hal_uart_handle_ptr[UART1INDX]);
+	}
+
+#ifdef UART2INDX
+	else if (USART2 == uart_hal->uart_module)
+	{
+		HAL_UART_DeInit(hal_uart_handle_ptr[UART2INDX]);
+	}
+#endif
+
+#ifdef UART3INDX
+	else if (USART3 == uart_hal->uart_module)
+	{
+		HAL_UART_DeInit(hal_uart_handle_ptr[UART3INDX]);
+	}
+#endif
+
+#ifdef UART4INDX
+	else if (USART4 == uart_hal->uart_module)
+	{
+		HAL_UART_DeInit(hal_uart_handle_ptr[UART4INDX]);
+	}
+#endif
+}
+
+void hal_uart_enable_tx(uart_hal_t* uart_hal)
+{
+	if ((UART_TYPE_USART == uart_hal->uart_type) || (UART_TYPE_LPUART == uart_hal->uart_type))
+	{
+		if ((ONE_WIRE_NO_EXTERNAL_PULLUP == uart_hal->uart_mode) || (ONE_WIRE == uart_hal->uart_mode))
+		{
+			/* if tx/rx pin is set to rx... */
+			if (uart_hal->uart_module->CR2 & USART_CR2_SWAP)
+			{
+				/* ...then set pin to tx */
+				uart_hal->uart_module->CR1 &= ~USART_CR1_UE;
+				uart_hal->uart_module->CR2 &= ~USART_CR2_SWAP; /* can only modify CR2 when UE is 0 */
+				uart_hal->uart_module->CR1 |=  USART_CR1_UE;
+			}
+		}
+		/* Enable Transmitter, transmit complete and transmitter empty interrupts */
+		uart_hal->uart_module->CR1 |= (USART_CR1_TE | USART_CR1_TXEIE_TXFNFIE | USART_CR1_TCIE);
+	}
+	else
+	{
+		/* No other types supported, silently fail */
+		return;
+	}
+#else
+	// UART initialization is being handled in function uart_driver_init()
+#endif
+}
+
+void hal_uart_disable_tx(uart_hal_t* uart_hal)
+{
+	if ((UART_TYPE_USART == uart_hal->uart_type) || (UART_TYPE_LPUART == uart_hal->uart_type))
+	{
+		/* Disable Transmitter */
+		uart_hal->uart_module->CR1 &= ~USART_CR1_TE;
+	}
+	else
+	{
+		/* No other types supported, silently fail */
+		return;
+	}
+}
+
+void hal_uart_enable_rx(uart_hal_t* uart_hal)
+{
+	if ((UART_TYPE_USART == uart_hal->uart_type) || (UART_TYPE_LPUART == uart_hal->uart_type))
+	{
+		/* Enable Receiver and Rx Data Available Interrupt */
+		uart_hal->uart_module->CR1 |= (USART_CR1_RE | USART_CR1_RXNEIE_RXFNEIE);
+	}
+	else
+	{
+		/* No other types supported, silently fail */
+		return;
+	}
+}
+
+void hal_uart_disable_rx(uart_hal_t* uart_hal)
+{
+	if ((UART_TYPE_USART == uart_hal->uart_type) || (UART_TYPE_LPUART == uart_hal->uart_type))
+	{
+		/* Disable Receiver and Rx Data Available Interrupt */
+		uart_hal->uart_module->CR1 &= ~(USART_CR1_RE | USART_CR1_RXNEIE_RXFNEIE);
+	}
+	else
+	{
+		/* No other types supported, silently fail */
+		return;
+	}
+}
+
+uint8_t hal_uart_read_byte(uart_hal_t* uart_hal)
+{
+	uint8_t return_val = '0';
+	if ((UART_TYPE_USART == uart_hal->uart_type) || (UART_TYPE_LPUART == uart_hal->uart_type))
+	{
+		/* put Rx data in return_val */
+		return_val = uart_hal->uart_module->RDR;
+	}
+	else
+	{
+		// No other types reported
+	}
+	return return_val;
+}
+
+
+void hal_uart_send_byte(uart_hal_t* uart_hal, uint8_t data_out)
+{
+	if ((UART_TYPE_USART == uart_hal->uart_type) || (UART_TYPE_LPUART == uart_hal->uart_type))
+	{
+		if ((ONE_WIRE_NO_EXTERNAL_PULLUP == uart_hal->uart_mode) || (ONE_WIRE == uart_hal->uart_mode))
+		{
+			/* if tx/rx pin is set to rx... */
+			if (uart_hal->uart_module->CR2 & USART_CR2_SWAP)
+			{
+				/* ...then set pin to tx */
+				uart_hal->uart_module->CR1 &= ~USART_CR1_UE;
+				uart_hal->uart_module->CR2 &= ~USART_CR2_SWAP; /* can only modify CR2 when UE is 0 */
+				uart_hal->uart_module->CR1 |=  USART_CR1_UE;
+			}
+		}
+
+		/* if the Tx buffer is empty */
+		if (uart_hal->uart_module->ISR & USART_ISR_TXE_TXFNF)
+		{
+			/* put data_out in the Tx data register */
+			uart_hal->uart_module->TDR = data_out;
+
+			/* Enable Transmitter, transmit complete and transmitter empty interrupts */
+			uart_hal->uart_module->CR1 |= (USART_CR1_TE | USART_CR1_TXEIE_TXFNFIE | USART_CR1_TCIE);
+		}
+	}
+}
+
+bool hal_uart_is_waiting_for_transmit_complete(uart_hal_t* uart_hal)
+{
+	return ((uart_hal->uart_module->CR1 & USART_CR1_TCIE) != 0);
+}
+
+void uart_irq_handler(USART_TypeDef* uart_module)
+{
+	uint8_t byte_to_tx;
+
+    /* if there are any error flags AND if in RX mode rather than Tx mode */
+	if (uart_module->ISR & (USART_ISR_ORE /*| USART_ISR_NE | USART_ISR_FE*/) && (uart_module->CR2 & USART_CR2_SWAP))
+	{
+		if (uart_module->ISR & USART_ISR_RXNE_RXFNE)
+		{
+			/* Note that reading the RDR register clears the RXNE flag.  We're reading 
+			 * TWICE here because there's an overrun error which means we have TWO bytes 
+			 * received, one in the RDR register, and then as soon as we read that once,
+			 * there's a byte that gets shifted into the RDR register from the
+			 * non-memory-mapped shift register.
+			 */
+			usart1_byte_received_callback(uart_module->RDR);
+			usart1_byte_received_callback(uart_module->RDR);
+		}
+	}
+		uart_module->ICR |= (USART_ICR_ORECF | USART_ICR_NECF | USART_ICR_FECF);
+
+    /* if a byte has been received AND if in Rx mode rather than Tx mode */
+	if ((uart_module->ISR & USART_ISR_RXNE_RXFNE) && (uart_module->CR2 & USART_CR2_SWAP))
+	{
+		/* Note that reading the RDR register clears the RXNE flag. */
+
+		if (USART1 == uart_module)
+		{
+			/* call the USART1 received callback, passing it the received data */
+			usart1_byte_received_callback(uart_module->RDR);
+		}
+		else if (USART2 == uart_module)
+		{
+			/* call the USART2 received callback, passing it the received data */
+			usart2_byte_received_callback(uart_module->RDR);
+		}
+#ifdef LPUART1
+		else if (LPUART1 == uart_module)
+		{
+			/* call the LPUART1 received callback, passing it the received data */
+			lpuart1_byte_received_callback(uart_module->RDR);
+		}
+#endif
+		else
+		{
+			//TODO
+		}
+	}
+
+#if 0
+	/* UART wakeup from Stop mode */
+	if ((uart_module->ISR & USART_ISR_WUF) && (uart_module->CR3 & USART_CR3_WUFIE))
+	{
+		uart_module->ICR |= USART_ICR_WUCF;
+	}
+#endif
+
+    /* if the transmit buffer is empty AND we're set to Tx rather than Rx */
+	if ((uart_module->ISR & USART_ISR_TXE_TXFNF) && !(uart_module->CR2 & USART_CR2_SWAP))
+	{
+		if (USART1 == uart_module)
+		{
+			/* call the USART1 transmit callback to get the byte to Tx */
+			if (usart1_transmit_ready_callback(&byte_to_tx))
+			{
+				/* transmit the byte */
+				uart_module->TDR = byte_to_tx;
+			}
+			else
+			{
+				/* disable the 'Tx buffer empty' interrupt */
+				uart_module->CR1 &= ~USART_CR1_TXEIE_TXFNFIE;
+			}
+		}
+		else if (USART2 == uart_module)
+		{
+			/* call the USART2 transmit callback to get the byte to Tx */
+			if (usart2_transmit_ready_callback(&byte_to_tx))
+			{
+				/* transmit the byte */
+				uart_module->TDR = byte_to_tx;
+			}
+			else
+			{
+				/* disable the 'Tx buffer empty' interrupt */
+				uart_module->CR1 &= ~USART_CR1_TXEIE_TXFNFIE;
+			}
+		}
+#ifdef LPUART1
+		else if (LPUART1 == uart_module)
+		{
+			/* call the LPUART1 transmit callback to get the byte to Tx */
+			if (lpuart1_transmit_ready_callback(&byte_to_tx))
+			{
+				/* transmit the byte */
+				uart_module->TDR = byte_to_tx;
+			}
+			else
+			{
+				/* disable the 'Tx buffer empty' interrupt */
+				uart_module->CR1 &= ~USART_CR1_TXEIE_TXFNFIE;
+			}
+		}
+#endif
+		else
+		{
+			//TODO
+		}
+	}
+
+/* TODO - need a callback in the UART driver for the 152 usec delay */
+    /* if the transmission complete flag is set AND we're set to Tx rather than Rx */
+	if ((uart_module->ISR & USART_ISR_TC) && !(uart_module->CR2 & USART_CR2_SWAP))
+	{
+		if (USART1 == uart_module)
+		{
+			if (usart1_blocking_delay)
+			{
+				/* delay to ride through the IR1 key glitch */
+				usart1_blocking_delay();
+			}
+		}
+		else if (USART2 == uart_module)
+		{
+			if (usart2_blocking_delay)
+			{
+				/* delay to ride through the IR1 key glitch */
+				usart2_blocking_delay();
+			}
+		}
+#ifdef LPUART1
+		else if (LPUART1 == uart_module)
+		{
+			if (lpuart1_blocking_delay)
+			{
+				/* delay to ride through the IR1 key glitch */
+				lpuart1_blocking_delay();
+			}
+		}
+#endif
+
+		/* switch tx/rx pin to rx if needed */
+		{
+			uart_mode_t uart_mode;
+
+			if (USART1 == uart_module)
+			{
+				uart_mode = usart1_mode;
+			}
+			else if (USART2 == uart_module)
+			{
+				uart_mode = usart2_mode;
+			}
+#ifdef LPUART1
+			else if (LPUART1 == uart_module)
+			{
+				uart_mode = lpuart1_mode;
+			}
+#endif
+			else
+			{
+				uart_mode = 0; /* Should never get here!  This line is just to ensure consistency on failure. */
+			}
+
+			if ((ONE_WIRE_NO_EXTERNAL_PULLUP == uart_mode) || (ONE_WIRE == uart_mode))
+			{
+				/* if tx/rx pin is set to tx... */
+				if (!(uart_module->CR2 & USART_CR2_SWAP))
+				{
+					/* ...then set pin to rx */
+					uart_module->CR1 &= ~USART_CR1_UE;
+					uart_module->CR2 |=  USART_CR2_SWAP; /* can only modify CR2 when UE is 0 */
+					uart_module->CR1 |=  USART_CR1_UE;
+				}
+			}
+		}
+
+		/* re-enable the receiver and receive interrupt */
+		uart_module->CR1 |= (USART_CR1_RE | USART_CR1_RXNEIE_RXFNEIE);
+
+		/* disable the 'Tx complete' interrupt */
+		uart_module->CR1 &= ~USART_CR1_TCIE;
+
+		/* clear the TC bit */
+		uart_module->ICR = USART_ICR_TCCF;
+	}
+}
+
+
+#ifndef USART1_IRQHandler
+void USART1_IRQHandler(void)
+{
+	uart_irq_handler(USART1);
+}
+#endif
+
+#ifndef USART2_IRQHandler
+
+void USART2_IRQHandler(void)
+{
+	uart_irq_handler(USART2);
+}
+
+#endif
+
+
+#endif  // USE_HAL_UART

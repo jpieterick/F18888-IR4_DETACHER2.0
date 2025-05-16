@@ -22,6 +22,8 @@ RM := rm -rf
 -include Drivers/STM32G0xx_HAL_Driver/Src/subdir.mk
 -include Core/Startup/subdir.mk
 -include Core/Src/subdir.mk
+-include Application/uarts_glue/Src/subdir.mk
+-include Application/uartTemp/subdir.mk
 -include Application/ir_key_glue/subdir.mk
 -include Application/fwVersion/Src/subdir.mk
 -include Application/flash_controller/Src/subdir.mk

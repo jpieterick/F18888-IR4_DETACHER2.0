@@ -1,0 +1,66 @@
+/**********************************
+ * File: AppUartDriver.h
+ * Invue Security Products
+ * Copyright 2020
+ **********************************/
+
+#ifndef __AppUartDriver_H
+#define __AppUartDriver_H
+
+#ifdef __cplusplus
+ extern "C" {
+#endif
+
+#include "periphdefs.h"
+
+// Include this definition in periphdefs.h
+#if defined USE_APP_UART
+#include <stdint.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include "pindefs.h"
+#include "periphdefs.h"
+#include "cyclic_fifo_queue.h"
+#include <AppUart.h>
+
+//#define TESTING_UARTS
+
+typedef struct
+{
+	uart_hal_t*   				uart_hal;
+	uint8_t*                    rx_buf;
+	uint8_t*                    tx_buf;
+	cyclic_fifo_queue_struct    rx_queue;
+	cyclic_fifo_queue_struct    tx_queue;
+} AppUartDriver_t;
+
+AppUartDriver_t* AppUartDriver_init(uart_indx_t uartIndx,
+                                             uart_hal_t* uart_hal,
+											 uint8_t* rx_buf,
+											 size_t rx_buf_size,
+											 uint8_t* tx_buf,
+											 size_t tx_buf_size);
+
+AppUartDriver_t* AppUartDriver_init_this_uart(uint8_t thisUartNumber);
+
+#ifdef TESTING_UARTS
+void uarta_buffer_a_test_byte(uint8_t byte_rx);
+#endif
+
+unsigned int AppUartDriver_byte_available(uart_indx_t uartIndx, uint8_t *byte);
+unsigned int AppUartDriver_tx_bytes_remaining(uart_indx_t uartIndx);
+unsigned int AppUartDriver_rx_bytes_remaining(uart_indx_t uartIndx);
+unsigned int AppUartDriver_tx_bytes_available(uart_indx_t uartIndx);
+void AppUartDriver_tx_add_byte(uart_indx_t uartIndx, uint8_t const *byte);
+bool AppUartDriver_is_transmitter_enabled(uart_indx_t uartIndx);
+bool AppUartDriver_is_receiver_enabled(uart_indx_t uartIndx);
+bool AppUartDriver_is_receiving(uart_indx_t uartIndx);
+bool AppUartDriver_is_transmitting(uart_indx_t uartIndx);
+void AppUartDriver_start_transmit_if_stopped(uart_indx_t uartIndx);
+
+#endif  // USE_APP_UART
+
+#ifdef __cplusplus
+}
+#endif
+#endif // __AppUartDriver_H

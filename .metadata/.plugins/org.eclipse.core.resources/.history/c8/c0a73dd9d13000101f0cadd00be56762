@@ -1,0 +1,837 @@
+/**********************************
+ * File: ir_key_glue.c
+ * Invue Security Products
+ * Copyright 2020
+ *
+ **********************************/
+
+#include "ir_key_glue.h"
+#if 0
+#include <limits.h> /* needed for UINT_MAX */
+#endif
+#include <string.h> /* needed for memcmp() */
+#include <stdbool.h>
+#include "hal_GPIO.h"
+#include "hal_UART.h"
+#include "uart_driver.h"
+#include "periphdefs.h"
+#include "pindefs.h"
+#include "firmware_version_number_defines.h"
+
+#if 0
+#include "hardware_abstraction_layer_common.h" /*Generic access for product id/product family defines made at runtime*/
+#include "scheduler_glue.h"
+#include "security_controller_glue.h"
+#include "comms.h"
+#endif
+
+#include "uarts_glue.h"
+#include "nv_data_glue.h"
+#include "hal_MsTick.h"
+#include "LedControl.h"
+
+#define RX_BUF_SIZE (64U)
+#define TX_BUF_SIZE (64U)
+#define A_BYTE_IS_AVAILABLE (0)
+#define ARTLA_SN_BYTE_SEVEN (7+2) // The serial number starts in byte 2 of the ARTLA message.
+#define ARTLA_TID_INDEX (13)
+#define IR3_ARTL_SIZE (2) // An IR3 Advanced Request To Link message is 2 bytes long.
+#define IR3_INFO_SIZE (17) // The IR1 Send SDC message is 6 bytes long
+#define IR3_INFO_TID_INDEX (15)
+#define IR3_SSPRD_SIZE (10)
+#define IR3_SSPRD_TID_INDEX (8)
+#define IR3_GPUD_SIZE (7)
+#define IR3_AEXE_SIZE (4)
+
+#ifdef TESTING_UARTS// defined in uart_driver.h
+#define NUM_RX_BYTES (64)
+#endif
+
+typedef enum AlarmCancellationState
+{
+	WAITING_4_ACK_AFTER_RTL,
+	WAITING_4_ACK_AFTER_SSDC,
+	WAITING_4_IR3_ARTLA,
+	WAITING_4_IR3_AACK,
+	WAITING_4_IR3_ANACK,
+	ALARM_CANCEL_DONE,
+} t_AlarmCancellationState;
+
+static uart_driver_t *IrInterfaceUartPtr = NULL;
+static uart_driver_t *UpabUartPtr = NULL;
+
+// Static Function Prototypes:
+#if 0
+static bool irkey_gl_IrInterfaceIsInactive(void);
+#endif
+
+
+/*
+ * Static Function Prototypes:
+ */
+void irkey_gl_send_RTL_message(uint8_t *tidPtr);
+
+static void irkey_gl_send_IR1_SSDC_message(uint8_t *tidPtr);
+
+static void irkey_gl_send_IR1_ACK_message(uint8_t *tidPtr);
+
+static void irkey_gl_send_IR3ARTL_message(uint8_t *tidPtr);
+
+static void irkey_gl_send_IR3_INFO_message(uint8_t *tidPtr,uint8_t *keyPtr);
+
+static void irkey_gl_send_IR3_SSPRD_message(uint8_t *tidPtr,uint8_t key0,uint8_t key1);
+
+static void irkey_gl_send_IR3_GPUD_message(uint8_t *tidPtr);
+
+static void irkey_gl_send_IR3_AEXE_message(uint8_t *tidPtr);
+
+static void irkey_gl_Transmit_packet (uint8_t msgBuffer[],uint8_t bufferSize,uart_indx_t UartIndex);
+
+
+#pragma GCC push_options
+#pragma GCC optimize("O0")
+#if 0
+bool irkey_gl_is_inactive(void)
+{
+	bool retVal = true;
+
+	if ((void*)0 != IrInterfaceUartPtr)
+	{
+		retVal = ((0 == uart_driver_tx_bytes_remaining(IrInterfaceUartPtr)) && /* no bytes in the Tx queue                                 */
+				  (0 == uart_driver_rx_bytes_remaining(IrInterfaceUartPtr)) && /* no bytes in the Rx queue                                 */
+				  //(!uart_driver_is_transmitter_enabled(IrInterfaceUartPtr)) && /* UART transmitter disabled                                */
+				  //( uart_driver_is_receiver_enabled(IrInterfaceUartPtr))    && /* UART receiver is enabled (front porch delay has expired) */
+				  (!uart_driver_is_receiving(IrInterfaceUartPtr))           && /* UART is not actively receiving                           */
+				  (!uart_driver_is_transmitting(IrKeyUartIndex))  && /* UART is not actively transmitting                        */
+				  invue_is_ir_key_receiver_idle());                /* IR key handler is waiting for its first byte             */
+	}
+
+	return retVal;
+}
+#endif
+static bool IrInterfaceIsInactive = true;
+
+static uint8_t alarmCanLastTransId = 0;
+
+// TODO: remove irkey_gl_IrInterfaceIsInactive() if it is not needed.
+#if 0
+static bool irkey_gl_IrInterfaceIsInactive(void)
+{
+	if (false == IrInterfaceIsInactive)
+	{
+	   // Variable IrInterfaceIsInactive is set to false when we subscribe to the "processing IR Key messages" task in the scheduler.
+	   // The following will set it to true when the task times out.
+	   //IrInterfaceIsInactive = schglue_did_task_occur_and_clear_if_so(TASK_PROCESSING_IR_KEY_MESSAGES);
+	}
+
+	return IrInterfaceIsInactive;
+}
+#endif
+void irkey_gl_send_RTL_message(uint8_t *tidPtr)
+{
+	uint8_t msgBuffer[IR1_RTL_SIZE];
+
+	msgBuffer[0] = TOKEN_IR1_RTL;
+	msgBuffer[1] = *tidPtr + 1;
+	*tidPtr = msgBuffer[1];
+
+	/* transmit the message to the UPAB */
+		irkey_gl_Transmit_packet(msgBuffer,IR1_RTL_SIZE,UPAB_UART_INDEX);
+}
+
+static void irkey_gl_send_IR1_SSDC_message(uint8_t *tidPtr)
+{
+	uint8_t msgBuffer[IR1_SSDC_SIZE];
+
+	// Build the IR1 SSDC message. Note that function invue_build_RTL_msg() increments the tid before using it.
+	uint8_t tx_msg_length = invue_build_IR1SdcMsg(msgBuffer,IR1_SSDC_SIZE,tidPtr);
+
+	/* transmit the message to the UPAB */
+	irkey_gl_Transmit_packet(msgBuffer,tx_msg_length,UPAB_UART_INDEX);
+}
+
+static void irkey_gl_send_IR1_ACK_message(uint8_t *tidPtr)
+{
+	uint8_t msgBuffer[IR1_ACK_SIZE];
+	/* transmit the packet */
+
+	msgBuffer[0] = TOKEN_IR1_ACK;
+	msgBuffer[1] = *tidPtr + 1;
+	*tidPtr = msgBuffer[1];
+
+
+	/* transmit the packet */
+	irkey_gl_Transmit_packet(msgBuffer,IR1_ACK_SIZE,UPAB_UART_INDEX);
+}
+
+
+static void irkey_gl_send_IR3ARTL_message(uint8_t *tidPtr)
+{
+	uint8_t msgBuffer[IR3_ARTL_SIZE];
+
+	msgBuffer[0] = TOKEN_IR3_ARTL;
+	msgBuffer[1] = *tidPtr + 1;
+	*tidPtr = msgBuffer[1];
+
+	/* transmit the packet */
+	irkey_gl_Transmit_packet(msgBuffer,IR3_ARTL_SIZE,UPAB_UART_INDEX);
+}
+
+
+static void irkey_gl_send_IR3_INFO_message(uint8_t *tidPtr,uint8_t *keyPtr)
+{
+	uint8_t msgBuffer[IR3_INFO_SIZE] = {0};
+
+	msgBuffer[0] = TOKEN_IR3_INFO;
+
+	uint32_t timestamp = halMsTickGet();
+
+	// put the message size into the second byte of the message.
+    msgBuffer[1] = IR3_INFO_SIZE;
+
+	// write the time stamp into the message
+	memcpy(&msgBuffer[3],&timestamp,4);
+
+	// Store the third byte of the time stamp for use in obfuscating the SDC later.
+	*keyPtr = msgBuffer[4];
+
+	// The UPAB firmware doesn't seem to do anything with the message bytes between the timestamp and the TID
+	// so we'll just leave them alone.
+
+	msgBuffer[IR3_INFO_TID_INDEX] = *tidPtr + 1;
+	*tidPtr = msgBuffer[IR3_INFO_TID_INDEX];
+
+	// Put the checksum in the last byte of the message:
+	msgBuffer[IR3_INFO_SIZE-1] = invue_calc_checksum(msgBuffer, IR3_INFO_SIZE-1);
+
+
+	/* transmit the packet */
+	irkey_gl_Transmit_packet(msgBuffer,IR3_INFO_SIZE,UPAB_UART_INDEX);
+}
+
+static void irkey_gl_send_IR3_SSPRD_message(uint8_t *tidPtr,uint8_t key0,uint8_t key1)
+{
+	uint8_t msgBuffer[IR3_SSPRD_SIZE] = {0};
+
+	msgBuffer[0] = TOKEN_IR3_SSPRD;
+
+	// Place the message length into the second byte of the message:
+	msgBuffer[1] = IR3_SSPRD_SIZE;
+
+	//The setter value goes into the third and fourth bytes of the message:
+	msgBuffer[2] = (uint8_t)(SETTER_SDC >> 8);
+	msgBuffer[3] = (uint8_t)(SETTER_SDC & 0x00FF);
+
+	// We need to place the obfuscated SDC into the message starting at the fifth byte:
+	nvdglGetSDC(&msgBuffer[4],SZ_OF_IR3_SDC);
+
+	// The SDC was copied into bytes 3 through 6 of the message. Now we'll use the decode SDC
+	// function to encode them:
+	decode_ir3_sdc(&msgBuffer[4],key0,key1);
+
+	msgBuffer[IR3_SSPRD_TID_INDEX] = *tidPtr + 1;
+
+	*tidPtr = msgBuffer[IR3_SSPRD_TID_INDEX];
+
+	// Put the checksum in the last byte of the message:
+	msgBuffer[IR3_SSPRD_SIZE-1] = invue_calc_checksum(msgBuffer, IR3_SSPRD_SIZE-1);
+
+	/* transmit the packet */
+	irkey_gl_Transmit_packet(msgBuffer,IR3_SSPRD_SIZE,UPAB_UART_INDEX);
+}
+
+
+static void irkey_gl_send_IR3_GPUD_message(uint8_t *tidPtr)
+{
+	// The UPAB firmware always rejects this message and returns a IR3 ANACK so the only bytes of the message
+	// that appear to be relevant are the message ID, the message size, the TID and the checksum. If this ever changes,
+	// this message will need to be updated.
+
+	uint8_t msgBuffer[IR3_GPUD_SIZE] = {0};
+
+    msgBuffer[0] = TOKEN_IR3_GPUD;
+
+    msgBuffer[1] = IR3_GPUD_SIZE;
+
+    msgBuffer[4] = *tidPtr + 1;
+
+    *tidPtr = msgBuffer[4];
+
+    // Put the checksum in the last byte of the message:
+    msgBuffer[IR3_GPUD_SIZE-1] = invue_calc_checksum(msgBuffer, IR3_GPUD_SIZE-1);
+
+    /* transmit the packet */
+    irkey_gl_Transmit_packet(msgBuffer,IR3_GPUD_SIZE,UPAB_UART_INDEX);
+}
+
+static void irkey_gl_send_IR3_AEXE_message(uint8_t *tidPtr)
+{
+	//
+
+	uint8_t msgBuffer[IR3_AEXE_SIZE - 1] = {0};
+
+    msgBuffer[0] = TOKEN_IR3_AEXE;
+
+    msgBuffer[1] = IR3_AEXE_SIZE;
+
+    msgBuffer[2] = *tidPtr + 1;
+
+    msgBuffer[IR3_AEXE_SIZE - 1] = invue_calc_checksum(msgBuffer, IR3_AEXE_SIZE - 1);
+
+    irkey_gl_Transmit_packet(msgBuffer,IR3_AEXE_SIZE,UPAB_UART_INDEX);
+
+}
+
+static void irkey_gl_Transmit_packet (uint8_t msgBuffer[],uint8_t bufferSize,uart_indx_t UartIndex)
+{
+	uart_driver_t *uartDriverPtr = uart_gl_GetUARTDriverPtr(UartIndex);
+
+	/* transmit the packet */
+	for (uint8_t byte_out_cntr = 0; byte_out_cntr < bufferSize; ++byte_out_cntr)
+	{
+		uart_driver_tx_add_byte(uartDriverPtr, &msgBuffer[byte_out_cntr]);
+
+		/* always call this, since something is in the queue */
+		uart_driver_start_transmit_if_stopped(UartIndex);
+	}
+}
+
+
+bool irkey_glSendAlarmCancellationMessages(uint32_t msSinceLastCall)
+{
+	static bool processingMessageSequence = false;
+	static uint8_t byteIndex = 0;
+
+	static t_AlarmCancellationState alarmCanState = ALARM_CANCEL_DONE;
+	static uint32_t msSinceLastByteReceived = 0;
+
+	static uint8_t key0;
+	static uint8_t key1;
+    static uint8_t msgBytesExpected = 0;
+    static bool ir3InfoJustSent = false;
+    static bool ir3SsprdJustSent = false;
+    static bool ir3GpudJustSent = false;
+    static bool ir3AexeJustSent = false;
+
+
+	// Check to see if we have already started an alarm cancellation message sequence:
+	if (false == processingMessageSequence)
+	{
+		// This is the first time that this function was called for this alarm cancellation sequence
+		processingMessageSequence = true;
+
+		// Check to see if there is an SDC available
+		if (true == nvdgl_has_sdc())
+		{
+
+			if (false == nvdgl_get_ir3_latched())
+			{
+				// We are operating in IR1 mode. We will send a request to link message and wait for an ack from the UPAB.
+				irkey_gl_send_RTL_message(&alarmCanLastTransId);
+
+				alarmCanState = WAITING_4_ACK_AFTER_RTL;
+
+				// Make sure that the various counters and flags are initialized before waiting for the ACK.
+				byteIndex = 0;
+				msSinceLastByteReceived = 0;
+			}
+			else
+			{
+				// TODO: Send the requisite IR3 messages to cancel an alarm
+
+				// We are in IR3 mode. Begin by sending an IR3 Advanced Request to Link message:
+				irkey_gl_send_IR3ARTL_message(&alarmCanLastTransId);
+
+				alarmCanState = WAITING_4_IR3_ARTLA;
+
+				// Make sure that the various counters and flags are initialized before waiting for the ACK.
+				byteIndex = 0;
+				msSinceLastByteReceived = 0;
+			}
+		}
+		else
+		{
+			// We need to mimic a test key and only send a request to link message. No further message processing
+			// is required.
+			processingMessageSequence = false;
+			irkey_gl_send_RTL_message(&alarmCanLastTransId);
+		}
+	}
+	else
+	{
+		// We've started an alarm cancellation sequence. Now we handle things with a state machine:
+		uint8_t byteReceived = 0;
+
+        msSinceLastByteReceived += msSinceLastCall;
+
+		switch (alarmCanState)
+		{
+		   case WAITING_4_ACK_AFTER_RTL:
+			   // Check to see if we have received a byte from the UPAB interface:
+			   if (A_BYTE_IS_AVAILABLE == uart_driver_byte_available(UpabUartPtr, &byteReceived))
+			   {
+				   if (0 == byteIndex)
+				   {
+					   // Check to see if this is the ACK message that we are waiting for:
+					   if (TOKEN_IR1_ACK == byteReceived)
+					   {
+						   ++byteIndex;
+						   msSinceLastByteReceived = 0;
+					   }
+				   }
+				   else
+				   {
+					   // check for the second byte of the ack message
+					   if (byteIndex == 1)
+					   {
+						   // This byte should always be a COM_ID_G4AU (0x03) when the ACK messages comes from the UPAB.
+						   if (COM_ID_G4AU == byteReceived)
+						   {
+							   ++byteIndex;
+							   msSinceLastByteReceived = 0;
+						   }
+						   else
+						   {
+							   // This isn't right. We shouldn't get here but we need to handle it just in case.
+							   processingMessageSequence = false;
+
+						   }
+					   }
+					   else if (byteIndex == 2)
+					   {
+						   msSinceLastByteReceived = 0;
+
+						   // Check for the third byte of the ACK message which is the tid. verify that it is the correct tid.
+						   if (byteReceived == (alarmCanLastTransId + 1))
+						   {
+							   // This is the message we were looking for.
+							   //
+							   alarmCanLastTransId = byteReceived;
+
+							   // We need to send the IR1 Send SDC message:
+							   irkey_gl_send_IR1_SSDC_message(&alarmCanLastTransId);
+
+							   alarmCanState = WAITING_4_ACK_AFTER_SSDC;
+
+						   } // if (byteReceived == (alarmCanLastTransId + 1))
+						   else
+						   {
+							   // The TID was not correct. We shouldn't get here but here we are. Just cancel:
+							   processingMessageSequence = false;
+							   byteIndex = 0;
+							   msSinceLastByteReceived = 0;
+							   alarmCanState = ALARM_CANCEL_DONE;
+
+						   }
+					   } // else if (byteIndex == 2)
+				   } // if (0 == byteIndex) : else
+			   } // if (A_BYTE_IS_AVAILABLE == uart_driver_byte_available(UpabUartPtr, &byteReceived))
+
+			   break;
+		   case WAITING_4_ACK_AFTER_SSDC:
+			   if (A_BYTE_IS_AVAILABLE == uart_driver_byte_available(UpabUartPtr, &byteReceived))
+			   {
+				   if (0 == byteIndex)
+				   {
+					   // Check to see if this is the ACK message that we are waiting for:
+					   if (TOKEN_IR1_ACK == byteReceived)
+					   {
+						   ++byteIndex;
+						   msSinceLastByteReceived = 0;
+					   }
+				   }
+				   else
+				   {
+					   // check for the second byte of the ack message
+					   if (byteIndex == 1)
+					   msSinceLastByteReceived = 0;
+
+					   // Check the second byte of this ACK message which is the tid. verify that it is the correct tid.
+					   if (byteReceived == (alarmCanLastTransId + 1))
+					   {
+						   // This is the message we were looking for.
+
+						   // The SSDC message was sent and now we've received an ACK. Now We'll send an
+						   // ACK back to the UPAB to complete the message sequence.
+						   irkey_gl_send_IR1_ACK_message(&alarmCanLastTransId);
+
+						   // Clear the message sequence started flag so that we start at the beginning next time that
+						   // the button gets pressed.
+						   processingMessageSequence = false;
+						   byteIndex = 0;
+						   msSinceLastByteReceived = 0;
+						   alarmCanState = ALARM_CANCEL_DONE;
+
+					   }
+					   else
+					   {
+						   // The TID was not correct. We shouldn't get here, but here we are. Just cancel:
+						   processingMessageSequence = false;
+						   byteIndex = 0;
+						   msSinceLastByteReceived = 0;
+						   alarmCanState = ALARM_CANCEL_DONE;
+
+					   }
+				   }
+			   } // if (A_BYTE_IS_AVAILABLE == uart_driver_byte_available(UpabUartPtr, &byteReceived))
+			   break;
+
+		   case WAITING_4_IR3_ARTLA:
+
+			   if (A_BYTE_IS_AVAILABLE == uart_driver_byte_available(UpabUartPtr, &byteReceived))
+			   {
+				   if (0 == byteIndex)
+				   {
+					   // Check to see if this is the ACK message that we are waiting for:
+					   if (TOKEN_IR3_ARTLA == byteReceived)
+					   {
+						   // This is the message that we expect.
+						   ++byteIndex;
+						   msSinceLastByteReceived = 0;
+					   }
+				   }
+				   else if (1 == byteIndex)
+				   {
+					   // The message length is contained in the second byte of the message:
+					   ++byteIndex;
+					   msgBytesExpected = byteReceived;
+					   msSinceLastByteReceived = 0;
+
+				   }
+				   else if (byteIndex < (msgBytesExpected - 1))
+				   {
+					   // We only need byte 7 of the UPABs serial number for encoding the SDC when we send it to the UPAB.
+					   if (ARTLA_SN_BYTE_SEVEN == byteIndex)
+					   {
+						   key0 = byteReceived;
+					   }
+
+					   else if(ARTLA_TID_INDEX == byteIndex )
+					   {
+						   if ((alarmCanLastTransId + 1) == byteReceived)
+						   {
+							   // This message has the correct TID We're good to go.
+							   alarmCanLastTransId = byteReceived;
+						   }
+						   else
+						   {
+							   // Something is wrong with this message sequence.
+							   processingMessageSequence = false;
+							   byteIndex = 0;
+							   alarmCanState = ALARM_CANCEL_DONE;
+						   }
+					   }
+					   ++byteIndex;
+
+					   msSinceLastByteReceived = 0;
+
+				   } // else if (byteIndex < msgBytesExpected)
+				   else
+				   {
+					   // We're at the end of the ARTLA message
+					   // Send the IR3 Info message:
+					   irkey_gl_send_IR3_INFO_message(&alarmCanLastTransId,&key1);
+
+					   alarmCanState = WAITING_4_IR3_AACK;
+
+					   byteIndex = 0;
+					   ir3InfoJustSent = true;
+					   msSinceLastByteReceived = 0;
+				   }
+
+			   }
+
+			   break;
+
+		   case WAITING_4_IR3_AACK:
+			   if (A_BYTE_IS_AVAILABLE == uart_driver_byte_available(UpabUartPtr, &byteReceived))
+			   {
+				   if (0 == byteIndex)
+				   {
+					   if (TOKEN_IR3_AACK == byteReceived)
+					   {
+						   msSinceLastByteReceived = 0;
+
+						   // We're only expecting this single byte. There is no TID to check and we deon't need to
+						   // to increment our TID.
+						   if (true == ir3InfoJustSent)
+						   {
+							   ir3InfoJustSent = false;
+							   // The next message that nees to be sent is the IR3 Special Set Private Data Request message
+
+							   irkey_gl_send_IR3_SSPRD_message(&alarmCanLastTransId,key0,key1);
+
+							   ir3SsprdJustSent = true;
+
+						   }
+						   else if (true == ir3SsprdJustSent)
+						   {
+							   ir3SsprdJustSent = false;
+
+							   // Send an IR3 GPUD message:
+							   irkey_gl_send_IR3_GPUD_message(&alarmCanLastTransId);
+
+							   ir3GpudJustSent = true;
+
+							   alarmCanState = WAITING_4_IR3_ANACK;
+						   }
+						   else if (true == ir3AexeJustSent)
+						   {
+							   ir3AexeJustSent = false;
+
+							   // This ACK is the final message in the alarm cancel sequence.
+
+							   alarmCanState = ALARM_CANCEL_DONE;
+
+							   processingMessageSequence = false;
+							   byteIndex = 0;
+						   }
+
+					   }
+				   }
+
+			   } // if (A_BYTE_IS_AVAILABLE == uart_driver_byte_available(UpabUartPtr, &byteReceived))
+
+
+			   break;
+
+		   case WAITING_4_IR3_ANACK:
+			   if (A_BYTE_IS_AVAILABLE == uart_driver_byte_available(UpabUartPtr, &byteReceived))
+			   {
+				   if (0 == byteIndex)
+				   {
+					   if (TOKEN_IR3_ANACK == byteReceived)
+					   {
+						   if (true == ir3GpudJustSent)
+						   {
+							   // The IR3 GPUD messages is the only message that should get an IR3 ANACK for a response.
+							   ir3GpudJustSent = false;
+
+							   // Now we'll send an IR3 AAEXE message:
+
+							   irkey_gl_send_IR3_AEXE_message(&alarmCanLastTransId);
+
+							   ir3AexeJustSent = true;
+
+							   msSinceLastByteReceived = 0;
+
+							   // We expect an IR3 AACK as a response so go back to waiting for the AACK:
+							   alarmCanState = WAITING_4_IR3_AACK;
+						   }
+					   }
+				   }
+			   }
+			   break;
+
+		   case ALARM_CANCEL_DONE:
+			   processingMessageSequence = false;
+			   break;
+
+		   default:
+
+			   // We shouldn't get here but just in case:
+			   processingMessageSequence = false;
+			   byteIndex = 0;
+			   msSinceLastByteReceived = 0;
+			   alarmCanState = ALARM_CANCEL_DONE;
+			   break;
+		} // switch (alarmCanState)
+
+		// Check to see if we've been waiting too long for the response from the UPAB.
+		if (IR_RX_TIMEOUT_MSEC <= msSinceLastByteReceived)
+		{
+			// something went wrong and we didn't get the response from the UPAB on time.
+			// stop waiting for a message and cleanup for next time.
+			processingMessageSequence = false;
+			byteIndex = 0;
+			msSinceLastByteReceived = 0;
+			alarmCanState = ALARM_CANCEL_DONE;
+		}
+
+	} // if (false == processingMessageSequence) else
+
+	// If the processingMessageSequence flag is set to false, we are done sending messages:
+	return (false == processingMessageSequence);
+}
+
+bool irkey_gl_key_handler(uint16_t time_since_last_called_msec)
+{
+	uint8_t  IrInterfaceReceivedByte    = 0;
+	bool     IrInterfaceByteAvailable   = false;
+
+	uint8_t  UpabReceivedByte           = 0;
+	bool     UpabByteAvailable          = false;
+
+	uint8_t  waiting_for_wipe_key_msec  = 0;
+
+	invue_ir_mode_enum ir_mode = nvdgl_get_ir_mode();
+
+    // We want to have just one variable to keep track of the number of Milliseconds since the last byte received.
+	static uint32_t MsecSinceLastRx               = 0;
+
+
+	static uint8_t  IrInterfaceMsgBuf[IR_MSG_MAX_LENGTH] = {0};
+	static uint8_t  IrInterfaceBytesExpected      = 0;
+	static uint8_t  IrInterfaceIncludesChecksum   = 0;
+	// declare the byte number used in the Rx handler
+	static uint8_t IrInterfaceRxByteNumber        = 0;
+
+
+	static uint8_t  UpabInterfaceMsgBuf[IR_MSG_MAX_LENGTH] = {0};
+	static uint8_t  UpabInterfaceBytesExpected    = 0;
+	static uint8_t  UpabInterfaceIncludesChecksum = 0;
+	// declare the byte number used in the Rx handler
+	static uint8_t UpabInterfaceRxByteNumber      = 0;
+
+	static uint8_t  rtl_received_flag      = false;
+
+	// TODO: Add code to call button handler code.
+
+	if (NULL == IrInterfaceUartPtr)
+	{
+		IrInterfaceUartPtr = uart_gl_GetUARTDriverPtr(IR_INTERFACE_UART_INDEX);
+	}
+
+	if (NULL == UpabUartPtr)
+	{
+		UpabUartPtr = uart_gl_GetUARTDriverPtr(UPAB_UART_INDEX);
+	}
+
+    if ((NULL == IrInterfaceUartPtr) || (NULL == UpabUartPtr))
+    {
+    	// These should both be set to point to their respective UART interfaces, but
+    	// something went wrong and we cannot proceed... Wait here for the watch dog.
+
+    	while (1);
+    }
+
+	// Start with the interface inactive flag set to true. It will be set to false when we process IR key traffic.
+	IrInterfaceIsInactive = true;
+
+	/* Check if a byte is available from the IR interface (an IR key).*/
+	if (A_BYTE_IS_AVAILABLE == uart_driver_byte_available(IrInterfaceUartPtr, &IrInterfaceReceivedByte))
+	{
+		IrInterfaceByteAvailable = true;
+		MsecSinceLastRx          = 0;
+
+		IrInterfaceIsInactive = false;
+
+		// There is a byte available from the IR interface, always transmit it to the UPAB
+		uart_driver_tx_add_byte(UpabUartPtr, &IrInterfaceReceivedByte);
+
+		uart_driver_start_transmit_if_stopped(UPAB_UART_INDEX);
+	}
+
+	/* Check if a byte is available from the UPAB */
+	if (A_BYTE_IS_AVAILABLE == uart_driver_byte_available(UpabUartPtr, &UpabReceivedByte))
+	{
+		UpabByteAvailable = true;
+		MsecSinceLastRx   = 0;
+
+		IrInterfaceIsInactive = false;
+
+		// There is a byte available from UPAB interface, always transmit it to the IR interface
+		uart_driver_tx_add_byte(IrInterfaceUartPtr, &UpabReceivedByte);
+
+		uart_driver_start_transmit_if_stopped(IR_INTERFACE_UART_INDEX);
+	}
+
+    if ((false == IrInterfaceByteAvailable) && (false == UpabByteAvailable))
+	{
+    	// We didn't receive any bytes this time so we'll add the number of milliseconds since the last
+    	// call to the count since we were last called.
+		MsecSinceLastRx = MsecSinceLastRx + time_since_last_called_msec;
+	}
+
+	// Now, if we've received a byte, we need to decide if there is anything that needs to be processed.
+
+
+	/* call the byte handler to deal with bytes from the key if any. if the byte handler indicates a complete message is available */
+	if (invue_get_ir_key_packet(IR_INTERFACE,                  // tells this function this this byte came from the PBIRDs IR interface.
+			                    ir_mode,                       // invue_ir_mode_enum ir_mode,
+			                    MsecSinceLastRx,               // uint32_t time_since_last_rx_msec,
+								IrInterfaceByteAvailable,      // bool byte_is_available,
+								IrInterfaceReceivedByte,       // uint8_t rx_byte,
+								IrInterfaceMsgBuf,             // rx_ir_message[],
+								&IrInterfaceBytesExpected,     // uint8_t *bytesExpectedPtr,
+								&IrInterfaceIncludesChecksum,  // uint8_t *includesChecksumPtr,
+								&IrInterfaceRxByteNumber))     // uint8_t *rxByteNumberPtr
+	{
+		// handle the IR key message
+		invue_handle_ir_key_message(IrInterfaceMsgBuf,
+													nvdgl_SDC_get_address(),
+													&rtl_received_flag,
+													&waiting_for_wipe_key_msec,
+													&ir_mode
+													);
+	}
+
+	/* call the byte handler to deal with bytes from the UPAB if any. if the byte handler indicates a complete message is available */
+	if (invue_get_ir_key_packet(UPAB_INTERFACE,                 // Tells this function that this byte came from the PBIRDs UPAB interface.
+								ir_mode,                        // invue_ir_mode_enum ir_mode,
+								MsecSinceLastRx,                // uint32_t time_since_last_rx_msec,
+								UpabByteAvailable,              // bool byte_is_available,
+								UpabReceivedByte,               // uint8_t rx_byte,
+								UpabInterfaceMsgBuf,            // uint8_t** ir_msg_ptr_ptr,
+								&UpabInterfaceBytesExpected,    // uint8_t *bytesExpectedPtr,
+								&UpabInterfaceIncludesChecksum, // uint8_t *includesChecksumPtr,
+								&UpabInterfaceRxByteNumber))    // uint8_t *rxByteNumberPtr
+
+	{
+		// handle the IR key message
+		invue_handle_ir_key_message(UpabInterfaceMsgBuf,
+													nvdgl_SDC_get_address(),
+													&rtl_received_flag,
+													&waiting_for_wipe_key_msec,
+													&ir_mode
+													);
+
+	}
+
+
+
+	// if the IR mode is IR3, ensure the flag is set properly
+	if (IR3_MODE == ir_mode)
+	{
+		nvdgl_set_ir3_latched();
+	}
+
+#if 0
+	if (false == irkey_gl_is_inactive())
+	{
+		// The IR key glue logic is still potentially communicating with a key. We'll set a scheduler timer
+		// to hold off going to a lower power mode if we switch to battery. Note that we don't need to worry about
+		// subscribing to the scheduler timer while the system clock is running at a slower speed because the system
+		// clock will have been set to its full speed when a key interaction started.
+		schglue_subscribe_task(TASK_PROCESSING_IR_KEY_MESSAGES, SCHGLUE_MS_TO_COUNTS(PROCESSING_IR_KEY_MESSAGES_MS));
+
+		IrInterfaceIsInactive = false;
+
+
+        // We also set a scheduler timer to handle some other timeouts.
+        if(schglue_did_task_occur_and_clear_if_so(TASK_IR_KEY_INTERNAL_TIMER))
+        {
+            #define INTERNAL_TIME_TRACKING_RESOLUTION_MS 15 // meh, used 15ms on OnePOD Sensor and it worked fine
+
+            schglue_subscribe_task(TASK_IR_KEY_INTERNAL_TIMER, SCHGLUE_MS_TO_COUNTS(INTERNAL_TIME_TRACKING_RESOLUTION_MS));
+
+            msec_since_last_rx = (UINT32_MAX - msec_since_last_rx) > INTERNAL_TIME_TRACKING_RESOLUTION_MS ?
+                                 msec_since_last_rx + INTERNAL_TIME_TRACKING_RESOLUTION_MS : UINT32_MAX;
+
+            // TODO: should we increment blank_key_timer_msec in here as well, instead of how we currently handle it?
+        }
+
+	}
+#endif
+
+	nvdgl_CompareAndWriteData();
+
+    // Return true if we have processed IR key traffic. Return false otherwise.
+	return !IrInterfaceIsInactive;
+} // bool irkey_gl_key_handler(uint16_t time_since_last_called_msec, ir3_pod_status_e ir3_system_status)
+
+#pragma GCC pop_options
+bool irkey_gl_ValidKeySeen(void)
+{
+	return invue_valid_sdc_waiting();
+}

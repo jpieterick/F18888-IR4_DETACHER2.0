@@ -56,7 +56,6 @@
 
 /* External variables --------------------------------------------------------*/
 extern ADC_HandleTypeDef hadc1;
-extern TIM_HandleTypeDef htim6;
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart3;
 /* USER CODE BEGIN EV */
@@ -153,23 +152,9 @@ void ADC1_IRQHandler(void)
   /* USER CODE END ADC1_IRQn 0 */
   HAL_ADC_IRQHandler(&hadc1);
   /* USER CODE BEGIN ADC1_IRQn 1 */
-  // When using the hal_uart, USART1_IRQHandler is defined in hal_uart.c.
-#ifndef USE_HAL_UART
+  // When using the hal_uart, USART1_IRQHandler is defined in hal_uart.c or AppUart.c.
+#if !defined( USE_HAL_UART) && !defined(USE_APP_UART)
   /* USER CODE END ADC1_IRQn 1 */
-}
-
-/**
-  * @brief This function handles TIM6 global interrupt.
-  */
-void TIM6_IRQHandler(void)
-{
-  /* USER CODE BEGIN TIM6_IRQn 0 */
-
-  /* USER CODE END TIM6_IRQn 0 */
-  HAL_TIM_IRQHandler(&htim6);
-  /* USER CODE BEGIN TIM6_IRQn 1 */
-
-  /* USER CODE END TIM6_IRQn 1 */
 }
 
 /**
@@ -182,7 +167,7 @@ void USART1_IRQHandler(void)
   /* USER CODE END USART1_IRQn 0 */
   HAL_UART_IRQHandler(&huart1);
   /* USER CODE BEGIN USART1_IRQn 1 */
-#endif
+
   /* USER CODE END USART1_IRQn 1 */
 }
 
@@ -196,7 +181,7 @@ void USART3_4_IRQHandler(void)
   /* USER CODE END USART3_4_IRQn 0 */
   HAL_UART_IRQHandler(&huart3);
   /* USER CODE BEGIN USART3_4_IRQn 1 */
-
+#endif
   /* USER CODE END USART3_4_IRQn 1 */
 }
 

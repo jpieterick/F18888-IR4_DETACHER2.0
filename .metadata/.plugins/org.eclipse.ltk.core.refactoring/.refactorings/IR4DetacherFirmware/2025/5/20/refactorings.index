@@ -1,0 +1,8 @@
+1747228816199	Rename resource 'uart_driver'
+1747228841521	Move 'Inc' to 'STM32G070xx'
+1747229414816	Move 2 resources to 'uartTemp'
+1747229423613	Move 2 resources to 'uartTemp'
+1747231618360	Rename resource 'hal_uart.c'
+1747231634294	Rename resource 'hal_uart.h'
+1747231653973	Rename resource 'uart_driver.c'
+1747231669428	Rename resource 'uart_driver.h'

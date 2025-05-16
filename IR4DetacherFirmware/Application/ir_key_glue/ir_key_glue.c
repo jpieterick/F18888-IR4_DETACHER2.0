@@ -25,8 +25,8 @@ INCLUDES
 
 #include "hal_interrupts.h"
 #include "hal_gpio.h"
-#include "hal_UART.h"
-#include "uart_driver.h"
+#include "AppUart.h"
+#include "AppUartDriver.h"
 #include "hal_timer.h"
 #include "app_version.h"
 #include "nv_data_controller.h"
@@ -43,24 +43,36 @@ INCLUDES
 ****************************************************************************/
 #define DEBUG_IRKEY_GLUE						 1
 #define IR_KEY_TASK_PERIOD_MS					 5
-#define RX_BUF_SIZE 							32
-#define TX_BUF_SIZE 							32
 #define BLOCK_LP_FOR_IR_MAX_TIME_MS				500
 #define MAX_TIME_TO_WAIT_FOR_A_RTL_MS     		10          // Wait about 10ms, or about 6.5 byte times for a RTL.
 #define IR_LOOPBACK_LOOP_CNT					10
 #define IR_LOOPBACK_SIGNAL_DWELL_CNT			200
 #define IR_LOOPBACK_PASS_CNT					( ( IR_LOOPBACK_SIGNAL_DWELL_CNT * IR_LOOPBACK_LOOP_CNT) - ( ( IR_LOOPBACK_SIGNAL_DWELL_CNT * IR_LOOPBACK_LOOP_CNT) >> 2))			// Passing is 75% of max count
-#define OUR_PROD_CATEGORY           	        PRODUCT_LINE_PACKAGE_PROTECTION
-#define OUR_PROD_ID								PRODUCT_LINE_PACKAGE_CORNER_PACKAGE_WRAP
+#define OUR_PROD_CATEGORY           	        PRODUCT_LINE_POD
+#define OUR_PROD_ID								PRODUCT_LINE_POD_IR4_DETACHER
 #define RX_REENABLE_DELAY_MS       				5
 #define IR_FRAME_TIME_USEC                      (1526*1.10)        	// (1/6553) * 10 = 0.001526. Add 10% margin
+
+#define USE_TEST_SN
+
+#if defined(USE_TEST_SN)
+static uint8_t testSN[DEVICE_SN_BYTES] =
+{
+		OUR_PROD_CATEGORY,
+		OUR_PROD_ID,
+		1,
+		2,
+		3,
+		4,
+		5,
+		6
+};
+#endif
 
 /****************************************************************************
                             GLOBAL VARIABLES
 ****************************************************************************/
-static uart_driver_t *k_uart = (void*)0;
-static uint8_t rx_buf[RX_BUF_SIZE] = {0U};
-static uint8_t tx_buf[TX_BUF_SIZE] = {0U};
+static AppUartDriver_t *k_uart = (void*)0;
 //static bool is_irkey_comms_allowed = false;
 static uint8_t ir_mode_ram_copy = IR4_NON_LIVE_ACCESS_MODE;
 static uint8_t sdc_ram_copy[ SZ_OF_IR3_SDC ] = {0};
@@ -84,8 +96,8 @@ static void get_IR4_info(IR4_LockStatus_e *ir4_lockState, IR4_DeviceState *ir4_s
 
 static _ir_comms_ctx_s ir_comm_ctx =
 {
-	.product_id_product_line = PRODUCT_LINE_PACKAGE_PROTECTION,
-	.product_id_product_num = PRODUCT_LINE_PACKAGE_CORNER_PACKAGE_WRAP,
+	.product_id_product_line = PRODUCT_LINE_POD,
+	.product_id_product_num = PRODUCT_LINE_POD_IR4_DETACHER,
 	.ir_mode = IR4_NON_LIVE_ACCESS_MODE, // will be overwritten by contents of nv memory
 	.legacy_device_type = G4DS_ALARM_UNIT,
 	.sdc = { 0 }, // will be overwritten by contents of nv memory
@@ -133,7 +145,7 @@ static const union
 
 
 #define IRKEY_KEEPALIVE_TIME_MS 1000
-static uint32_t active_timer;
+//static uint32_t active_timer;
 
 /****************************************************************************
                             FUNCTION PROTOTYPES
@@ -183,22 +195,29 @@ bool factory_reset(void)
   return true;
 }
 
-void irkey_gl_init(enum uart_id key_uart)
+void irkey_gl_init(uint8_t key_uart)
 {
 	/* Register a callback for the IR key blocking delay */
 	uart_defs[key_uart].uart_hal.blocking_delay = irKey_blocking_delay;
 
 	/* initialize the UART driver */
-	k_uart = uart_driver_init(uart_defs[key_uart].uart_bus_num, &(uart_defs[key_uart].uart_hal), rx_buf, RX_BUF_SIZE, tx_buf, TX_BUF_SIZE);
+#if 0
+	k_uart = AppUartDriver_init(uart_defs[key_uart].uart_bus_num, &(uart_defs[key_uart].uart_hal),
+			                    rx_buffer, IR_MSG_MAX_LENGTH,
+								tx_buffer, IR_MSG_MAX_LENGTH);
+#endif
 
-    hal_uart_disable_tx(  &uart_defs[key_uart].uart_hal );
-    hal_uart_enable_rx( &uart_defs[key_uart].uart_hal );
-	hal_gpio_set_output(RX_EN, true);
+	k_uart = AppUartDriver_init_this_uart(key_uart);
+
+    AppUart_disable_tx(  key_uart );
+    AppUart_enable_rx( key_uart );
+	//hal_gpio_set_output(RX_EN, true);
 
 	if( fcul_read(FLASH_KEY_SDC, sdc_ram_copy, SZ_OF_IR3_SDC) == FLASH_KEY_NOT_FOUND)
 	{
 		memset( sdc_ram_copy, 0, SZ_OF_IR3_SDC);
 	}
+	// TODO: Write code to make a test SDC.
 #if USE_RTT_FOR_DEBUGGING
 	debug_rtt_printf("%s SDC 0x%02x%02x%02x%02x\r\n", __FUNCTION__,
 			ir_comm_ctx.sdc[0],
@@ -213,19 +232,25 @@ void irkey_gl_init(enum uart_id key_uart)
 #if 1
 	if( fcul_read(FLASH_KEY_SERIAL_NUMBER, our_serial_ram_copy, DEVICE_SN_BYTES) == FLASH_KEY_NOT_FOUND)
 	{
+#if defined(USE_TEST_SN)
+		memcpy( our_serial_ram_copy,testSN, DEVICE_SN_BYTES);
+#else
 		memset( our_serial_ram_copy, 0, DEVICE_SN_BYTES);
 
 		/* there is no good way to handle this condition but, at this point, this is a true statement */
 		ir_comm_ctx.is_my_sn_blank = true;
+#endif
 	}
 	else if (0 == memcmp(our_serial_ram_copy, blanks.sn, DEVICE_SN_BYTES))
 	{
+
 		ir_comm_ctx.is_my_sn_blank = true;
 	}
 	else
 	{
 		memcpy(ir_comm_ctx.my_sn, our_serial_ram_copy, DEVICE_SN_BYTES);
 	}
+	// TODO: Write code to setup a test serial number.
 
 #if USE_RTT_FOR_DEBUGGING
 	debug_rtt_printf("%s SN  0x%02x%02x%02x%02x%02x%02x%02x%02x\r\n", __FUNCTION__,
@@ -251,22 +276,22 @@ void irkey_gl_init(enum uart_id key_uart)
 bool irkey_gl_is_inactive(void)
 {
 #if 0
-	return ((0 == uart_driver_tx_bytes_remaining(k_uart)) && /* no bytes in the Tx queue                                 */
-			(0 == uart_driver_rx_bytes_remaining(k_uart)) && /* no bytes in the Rx queue                                 */
-			(!uart_driver_is_transmitter_enabled(k_uart)) && /* UART transmitter disabled                                */
-			( uart_driver_is_receiver_enabled(k_uart))    && /* UART receiver is enabled (front porch delay has expired) */
-			(!uart_driver_is_receiving(k_uart))           && /* UART is not actively receiving                           */
-			(!uart_driver_is_transmitting(k_uart))        && /* UART is not actively transmitting                        */
+	return ((0 == AppUartDriver_tx_bytes_remaining(k_uart)) && /* no bytes in the Tx queue                                 */
+			(0 == AppUartDriver_rx_bytes_remaining(k_uart)) && /* no bytes in the Rx queue                                 */
+			(!AppUartDriver_is_transmitter_enabled(k_uart)) && /* UART transmitter disabled                                */
+			( AppUartDriver_is_receiver_enabled(k_uart))    && /* UART receiver is enabled (front porch delay has expired) */
+			(!AppUartDriver_is_receiving(k_uart))           && /* UART is not actively receiving                           */
+			(!AppUartDriver_is_transmitting(k_uart))        && /* UART is not actively transmitting                        */
 			invue_is_ir_key_receiver_idle()               && /* IR key handler is waiting for its first byte             */
 			(block_lp_for_IR_tmr == 0 || (IR_wait_for_rtl_active && IR_wait_for_rtl_tmr == 0))                     &&
 			            ((rtl_received_flag && (blank_key_timer_msec != 0) ) == 0));
 #elif 1
-	volatile bool a = (0 == uart_driver_tx_bytes_remaining(k_uart));
-	volatile bool b = (0 == uart_driver_rx_bytes_remaining(k_uart));
-	volatile bool c = (!uart_driver_is_transmitter_enabled(k_uart));
-	//volatile bool d = ( uart_driver_is_receiver_enabled(k_uart));
-	volatile bool e = (!uart_driver_is_receiving(k_uart));
-	volatile bool f = (!uart_driver_is_transmitting(k_uart));
+	volatile bool a = (0 == AppUartDriver_tx_bytes_remaining(IR_INTERFACE_UART_INDEX));
+	volatile bool b = (0 == AppUartDriver_rx_bytes_remaining(IR_INTERFACE_UART_INDEX));
+	volatile bool c = (!AppUartDriver_is_transmitter_enabled(IR_INTERFACE_UART_INDEX));
+	//volatile bool d = ( AppUartDriver_is_receiver_enabled(IR_INTERFACE_UART_INDEX));
+	volatile bool e = (!AppUartDriver_is_receiving(IR_INTERFACE_UART_INDEX));
+	volatile bool f = (!AppUartDriver_is_transmitting(IR_INTERFACE_UART_INDEX));
 	//volatile bool g = irComms_is_msg_parsing_idle(&ir_comm_ctx);
 	volatile bool h = (block_lp_for_IR_tmr == 0 /*|| (IR_wait_for_rtl_active && IR_wait_for_rtl_tmr == 0)*/);
 	volatile bool i = ((rtl_received_flag && (blank_key_timer_msec != 0) ) == 0);
@@ -309,7 +334,7 @@ void irKey_gl_HandleTimers( uint32_t elapsed_ms )
 
 uint32_t irkey_gl_getRxbyte( uint8_t *p_ReceivedByte )
 {
-	return uart_driver_byte_available(k_uart, p_ReceivedByte);
+	return AppUartDriver_byte_available(IR_INTERFACE_UART_INDEX, p_ReceivedByte);
 }
 
 void irkey_gl_addTxByte( const uint8_t *p_TransmitByte )
@@ -317,12 +342,12 @@ void irkey_gl_addTxByte( const uint8_t *p_TransmitByte )
 #if USE_RTT_FOR_DEBUGGING && DEBUG_IRKEY_GLUE
 	debug_rtt_printf("%s 0x%02x\r\n", __FUNCTION__, *p_TransmitByte);
 #endif
-	uart_driver_tx_add_byte(k_uart, p_TransmitByte);
+	AppUartDriver_tx_add_byte(IR_INTERFACE_UART_INDEX, p_TransmitByte);
 }
 
 void irkey_gl_trigger_transmit( void )
 {
-	uart_driver_start_transmit_if_stopped(k_uart);
+	AppUartDriver_start_transmit_if_stopped(IR_INTERFACE_UART_INDEX);
 }
 
 #if 0
@@ -348,7 +373,7 @@ void irKey_gl_HandleTimers( uint32_t elapsed_ms )
 
 /*****************************************************************
 *  FncName        irKey_CodeReader_Callback
-*  Description: Weak decleration of the callback. Implement in app code to provide specific app data back.
+*  Description: Weak declaration of the callback. Implement in app code to provide specific app data back.
 *  parameters:  uint8_t codeReaderData[9]: 9-Byte array for code reader data
 *  return:        void
 *****************************************************************/
@@ -370,12 +395,14 @@ void  irkey_gl_key_handler(void)
 	uint8_t  received_byte              = 0;
 	uint8_t  byte_available_flag        = 0;
 	uint32_t tx_msg_length              = 0;
-	uint8_t* ir_msg_in_ptr              = 0;
 	uint8_t* ir_msg_out_ptr             = ir_comm_ctx._buffers.tx_buffer;
+#if NOT_USED
+	uint8_t* ir_msg_in_ptr              = 0;
 	uint8_t  waiting_for_wipe_key_msec  = 0;
 	uint8_t  legacy_code_reader_data[9] = { 0 };
-	uint8_t  byte_out_cntr = 0;
 	uint16_t fw_version_to_send;
+#endif
+	uint8_t  byte_out_cntr = 0;
 	invue_ir_mode_enum ir_mode_temp = 		(invue_ir_mode_enum)ir_mode_ram_copy;
     _ir_comms_output_s output;
 
@@ -492,14 +519,16 @@ void  irkey_gl_key_handler(void)
 		// if there is data to transmit
 		if (tx_msg_length > 0)
 		{
-			hal_uart_disable_rx( k_uart->uart_hal );
+			AppUart_disable_rx( IR_INTERFACE_UART_INDEX );
             /* From F1885: IR3 Test Key in IR1 mode wasn't getting some responses and would send retries. I found that the TX seemed to be turning on too fast for the IR Key on hand. Adding 1-bit time
              * of delay helped but didn't resolve the issue. 500uS seemed to resolve the issue but is loooong. 250uS seems stable too but has a few double chirps in 20 key presses.
              * I think I vaguely remember Mike W saying something about not responding too fast or it will cause IR3 Key to drop data.
              */
             hal_timer_blocking_delay_variable_usec(300);
 
-			hal_uart_enable_tx( k_uart->uart_hal );
+			AppUart_enable_tx( IR_INTERFACE_UART_INDEX );
+
+			AppUart_disable_rx( IR_INTERFACE_UART_INDEX );
 
             /* Make sure we have a good valid front porch for start bit on response. Some keys are picky. We should provide at least 1 full frame = 1.52mS (10bits).
              * I usually use 2ms here but I dropped it to 1526us for 1 frame time */
@@ -512,6 +541,11 @@ void  irkey_gl_key_handler(void)
 			}
 			block_lp_for_IR_tmr = BLOCK_LP_FOR_IR_MAX_TIME_MS;
 			irkey_gl_trigger_transmit();
+
+			AppUart_disable_tx( IR_INTERFACE_UART_INDEX );
+
+
+			AppUart_enable_rx( IR_INTERFACE_UART_INDEX );
 		}
 	}
     /* if the blank key timeout has occurred */
@@ -549,14 +583,14 @@ void irkey_gl_switchHWToKeyComms( void )
 	if(k_uart != NULL )
 	{
 		hal_interrupts_disable();
-		hal_uart_disable_tx(k_uart->uart_hal);
-		hal_uart_disable_rx(k_uart->uart_hal);
+		AppUart_disable_tx(k_uart->uart_hal);
+		AppUart_disable_rx(k_uart->uart_hal);
 
 		// Adjust the baud rate
 		k_uart->uart_hal->target_baud_bps = IR_COMMS_BAUD;
 
 		// Re-initialize the uart with the new baud rate
-		hal_uart_init(k_uart->uart_hal);
+		AppUart_init(k_uart->uart_hal);
 
 		// Reset Queues
 		k_uart->rx_queue.input = 0;
@@ -564,7 +598,7 @@ void irkey_gl_switchHWToKeyComms( void )
 		k_uart->tx_queue.input = 0;
 		k_uart->tx_queue.output = 0;
 
-		hal_uart_enable_rx(k_uart->uart_hal);
+		AppUart_enable_rx(k_uart->uart_hal);
 		hal_interrupts_enable();
 	}
 }
@@ -588,6 +622,7 @@ void irkey_gl_setIRKeyCommsEnabled( void )
  *  @return void
  */
 void set_irkey_task_ready_flag_if_not_scheduled(void);
+#if NOT_USED
 void ir_rx_gpio_cb( uint32_t intNum )
 {
 	(void)intNum;
@@ -595,25 +630,29 @@ void ir_rx_gpio_cb( uint32_t intNum )
 	active_timer = SCHGLUE_INTERRUPT_MS_TO_COUNT(IRKEY_KEEPALIVE_TIME_MS);
 	set_irkey_task_ready_flag_if_not_scheduled();
 }
-
+#endif
 /** @brief set_ir_for_sleep
  *  @details Setup IR GPIO for sleep mode
  *  @param[in] void
  *  @return void
  */
+
+#if NOT_USED
 void set_ir_for_sleep( void )
 {
-	hal_uart_disable_rx(k_uart->uart_hal);
-	hal_uart_configure_gpio( k_uart->uart_hal, false /*conn_tx*/, false /*conn_rx*/, false /*conn_dir*/);			// Disconnect Rx & TX from UART to allow GPIO change
-    hal_gpio_set_output( IR_TXD, 0);
+	AppUart_disable_rx(k_uart->uart_hal);
+	AppUart_configure_gpio( k_uart->uart_hal, false /*conn_tx*/, false /*conn_rx*/, false /*conn_dir*/);			// Disconnect Rx & TX from UART to allow GPIO change
+    hal_gpio_set_output( IR_UART_TX, 0);
     hal_gpio_set_pull( IR_TXD, GPIO_PULLDOWN);
-    hal_gpio_set_pin_mode(IR_TXD, TXD_MODE_FOR_IDLE_SLEEP );
+    hal_gpio_set_pin_mode(IR_UART_TX, TXD_MODE_FOR_IDLE_SLEEP );
 	ir_rx_wake_flag = false;
 	IR_wait_for_rtl_active = false;
 	block_lp_for_IR_tmr = 0;
 	IR_wait_for_rtl_tmr = 0;
 }
+#endif
 
+#if NOT_USED
 /** @brief set_ir_for_active
  *  @details Setup IR GPIO for active mode
  *  @param[in] void
@@ -633,13 +672,14 @@ void set_ir_for_active( void )
 		IR_wait_for_rtl_active = true;
 	}
     // Switch IR TXD back to no pulldown + pushpull config before mapping back to UART control
-    hal_gpio_set_output( IR_TXD, 0);
-    hal_gpio_set_pull( IR_TXD, GPIO_NOPULL);
-    hal_gpio_set_pin_mode(IR_TXD, TXD_MODE_ACTIVE );
+    hal_gpio_set_output( IR_UART_TX, 0);
+    hal_gpio_set_pull( IR_UART_TX, GPIO_NOPULL);
+    hal_gpio_set_pin_mode(IR_UART_TX, TXD_MODE_ACTIVE );
 
-	hal_uart_configure_gpio( &uart_defs[UART_IR_COMMS].uart_hal, true /*conn_tx*/, true /*conn_rx*/, false /*conn_dir*/);	// Reconnect Rx & TX to UART
-	hal_uart_enable_rx(k_uart->uart_hal);
+	AppUart_configure_gpio( &uart_defs[IR_INTERFACE_UART_INDEX].uart_hal, true /*conn_tx*/, true /*conn_rx*/, false /*conn_dir*/);	// Reconnect Rx & TX to UART
+	AppUart_enable_rx(k_uart->uart_hal);
 }
+#endif
 
 #if NOT_USED
 /** @brief irKey_runLoopback
@@ -659,12 +699,12 @@ bool irKey_runLoopback( void )
 	uint32_t inputHighCounter = 0;
 	uint32_t i = 0;
 
-	hal_uart_disable_tx(  &uart_defs[UART_IR_KEY].uart_hal );
-	hal_uart_disable_rx( &uart_defs[UART_IR_KEY].uart_hal );
+	AppUart_disable_tx(  &uart_defs[UART_IR_KEY].uart_hal );
+	AppUart_disable_rx( &uart_defs[UART_IR_KEY].uart_hal );
 
 	hal_gpio_set_output( IO_IR_TX_KEY, 0);
 
-	hal_uart_configure_gpio( &uart_defs[UART_IR_KEY].uart_hal, false /*conn_tx*/, false /*conn_rx*/, false /*conn_dir*/);
+	AppUart_configure_gpio( &uart_defs[UART_IR_KEY].uart_hal, false /*conn_tx*/, false /*conn_rx*/, false /*conn_dir*/);
 
 	for( loopCount = 0; loopCount < IR_LOOPBACK_LOOP_CNT; loopCount++)
 	{
@@ -685,9 +725,9 @@ bool irKey_runLoopback( void )
 
 	hal_gpio_set_output( IO_IR_TX_KEY, 0);
 
-	hal_uart_configure_gpio( &uart_defs[UART_IR_KEY].uart_hal, true /*conn_tx*/, true /*conn_rx*/, false /*conn_dir*/);
-	hal_uart_disable_tx(  &uart_defs[UART_IR_KEY].uart_hal );
-	hal_uart_enable_rx( &uart_defs[UART_IR_KEY].uart_hal );
+	AppUart_configure_gpio( &uart_defs[UART_IR_KEY].uart_hal, true /*conn_tx*/, true /*conn_rx*/, false /*conn_dir*/);
+	AppUart_disable_tx(  &uart_defs[UART_IR_KEY].uart_hal );
+	AppUart_enable_rx( &uart_defs[UART_IR_KEY].uart_hal );
 
 
 	if( inputLowCounter >= IR_LOOPBACK_PASS_CNT && inputHighCounter >= IR_LOOPBACK_PASS_CNT )
@@ -756,13 +796,14 @@ bool irKey_has_authorized_key_been_used_first_time( void )
 	return temp;
 }
 
+#if NOT_USED
 void flash_debug(void)
 {
   generic_debug("INVADD: %u\r\n", MSC->STATUS & MSC_STATUS_INVADDR );
   generic_debug("PENDING: %u\r\n", MSC->STATUS & MSC_STATUS_PENDING );
   generic_debug("PWRON: %u\r\n", MSC->STATUS & MSC_STATUS_PWRON );
 }
-
+#endif
 
 /** @brief irKey_diff_serial_and_update
  *  @details
@@ -774,7 +815,9 @@ void irKey_diff_serial_and_update( uint8_t *_sn )
 	//uint32_t writeResult;
 	if( memcmp( _sn, our_serial_ram_copy/*ram copy*/,DEVICE_SN_BYTES ) != 0)
 	{
+#if NOT_USED
 		flash_debug();
+#endif
 
 		if(fcul_write( FLASH_KEY_SERIAL_NUMBER, (const uint8_t*)_sn, DEVICE_SN_BYTES)  == DEVICE_SN_BYTES)
 		{
@@ -817,7 +860,7 @@ static void irKey_diff_sdc_and_update( uint8_t *_sdc)
  */
 static void irKey_blocking_delay(void)
 {
-	hal_uart_disable_tx(k_uart->uart_hal);
+	AppUart_disable_tx(IR_INTERFACE_UART_INDEX);
 	hal_timer_blocking_delay_for_152us();
 }
 

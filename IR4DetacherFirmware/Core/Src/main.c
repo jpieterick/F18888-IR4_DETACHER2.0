@@ -58,6 +58,7 @@
 #include "audio_controller.h"
 #include "ir_key_glue.h"
 #include "rtt_debug.h"
+#include "AppUart.h"
 
 /* USER CODE END Includes */
 
@@ -104,6 +105,7 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
 	static uint32_t TickSinceLastExecution	= 0;
+	static uint32_t LastExecutionTickCount		= 0;
 
 	static bool Authorized			= false;
 	static bool ValidSdcIsPresent	= false;
@@ -171,7 +173,7 @@ int main(void)
 	hal_interrupts_enable();
 #endif
 	
-	irkey_gl_init(IR_COMM_UART_INDX);
+	irkey_gl_init(IR_INTERFACE_UART_INDEX);
 
 #if 0
 	// Call initialization functions setup in the Device COnfiguration Tool.
@@ -213,16 +215,20 @@ int main(void)
 	  /* reset the WDT */
 	  hal_watchdog_reset();
 
-
 	  ac_audio_controller((uint16_t) TicksinceLastLoop);
-
-      TickSinceLastExecution += TicksinceLastLoop;
 
       UtilDebounceReadAndDebounceInputs();
 
+
+      TickSinceLastExecution = hal_timer_get_ticks_since_count(LastExecutionTickCount);
+
 	  if (LOOP_THROTTLE_INTERVAL <= TickSinceLastExecution)
 	  {
-		  TickSinceLastExecution = 0;
+		  irKey_gl_HandleTimers(TickSinceLastExecution);
+
+		  LastExecutionTickCount = hal_timer_get_systick();
+
+
 		  // Check for NFC activity
 
 		  // Check for IR input activity
@@ -232,6 +238,8 @@ int main(void)
 		  {
 			  /* reset the WDT */
 			  hal_watchdog_reset();
+
+			  irkey_gl_key_handler();
 
 			  // check debounced button and interrupt inputs
 			  if (false == buttonPressed)
@@ -260,11 +268,13 @@ int main(void)
 					  {
 					     ac_chirp(1);
 					     chirp = false;
+					     hal_gpio_set_output(LED_GREEN,true);
 					  }
 					  else
 					  {
 						  ac_error_tone(1);
 						  chirp = true;
+						     hal_gpio_set_output(LED_GREEN,false);
 					  }
 
 				  }

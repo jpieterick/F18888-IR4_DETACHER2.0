@@ -1,0 +1,823 @@
+/** @file ir_key_glue.c
+ *  @brief Application code for IR Key interaction
+ *
+ *  @details
+ *
+ *	Assumptions mode:
+ *
+ *
+ *  @author Nick M / Kevin B
+ *  @bug No known bugs.
+ *
+ *  InVue Security Products
+ *  Copyright 2023
+ */
+
+/***************************************************************************
+INCLUDES
+****************************************************************************/
+#include <string.h> /* needed for memcmp() */
+#include <limits.h> /* needed for UINT_MAX */
+
+#if USE_RTT_FOR_DEBUGGING
+#include "rtt_debug.h"
+#endif
+
+#include "hal_interrupts.h"
+#include "hal_gpio.h"
+#include "hal_UART.h"
+#include "uart_driver.h"
+#include "hal_timer.h"
+#include "app_version.h"
+#include "nv_data_controller.h"
+#include "flash_glue.h"
+#include "ir_key_glue.h"
+#include "invue_ir_comms.h"
+#include "invue_NFC.h"
+#include "pindefs.h"
+#include "hardware_abstraction_layer.h"
+#include "Utils.h"
+
+/****************************************************************************
+                            DEFINES
+****************************************************************************/
+#define DEBUG_IRKEY_GLUE						 1
+#define IR_KEY_TASK_PERIOD_MS					 5
+#define RX_BUF_SIZE 							32
+#define TX_BUF_SIZE 							32
+#define BLOCK_LP_FOR_IR_MAX_TIME_MS				500
+#define MAX_TIME_TO_WAIT_FOR_A_RTL_MS     		10          // Wait about 10ms, or about 6.5 byte times for a RTL.
+#define IR_LOOPBACK_LOOP_CNT					10
+#define IR_LOOPBACK_SIGNAL_DWELL_CNT			200
+#define IR_LOOPBACK_PASS_CNT					( ( IR_LOOPBACK_SIGNAL_DWELL_CNT * IR_LOOPBACK_LOOP_CNT) - ( ( IR_LOOPBACK_SIGNAL_DWELL_CNT * IR_LOOPBACK_LOOP_CNT) >> 2))			// Passing is 75% of max count
+#define OUR_PROD_CATEGORY           	        PRODUCT_LINE_PACKAGE_PROTECTION
+#define OUR_PROD_ID								PRODUCT_LINE_PACKAGE_CORNER_PACKAGE_WRAP
+#define RX_REENABLE_DELAY_MS       				5
+#define IR_FRAME_TIME_USEC                      (1526*1.10)        	// (1/6553) * 10 = 0.001526. Add 10% margin
+
+/****************************************************************************
+                            GLOBAL VARIABLES
+****************************************************************************/
+static uart_driver_t *k_uart = (void*)0;
+static uint8_t rx_buf[RX_BUF_SIZE] = {0U};
+static uint8_t tx_buf[TX_BUF_SIZE] = {0U};
+//static bool is_irkey_comms_allowed = false;
+static uint8_t ir_mode_ram_copy = IR4_NON_LIVE_ACCESS_MODE;
+static uint8_t sdc_ram_copy[ SZ_OF_IR3_SDC ] = {0};
+static uint8_t our_serial_ram_copy[ DEVICE_SN_BYTES ] = {0};
+static uint32_t blank_key_timer_msec   = 0;
+static uint32_t msec_since_last_rx     = 0;
+static uint8_t  rtl_received_flag      = false;
+static volatile uint32_t ir_rx_wake_flag = false;
+static bool first_valid_authorized_key_used = false;
+
+static volatile uint32_t IR_wait_for_rtl_tmr = 0;
+static volatile uint32_t block_lp_for_IR_tmr = 0;
+static volatile uint32_t IR_wait_for_rtl_active = false;
+
+
+static void get_IR4_info(IR4_LockStatus_e *ir4_lockState, IR4_DeviceState *ir4_status)
+{
+    *ir4_lockState = IR4_LOCK_UNLOCK_SELF_LATCH;
+    *ir4_status = IR4_DeviceOk;
+}
+
+static _ir_comms_ctx_s ir_comm_ctx =
+{
+	.product_id_product_line = PRODUCT_LINE_PACKAGE_PROTECTION,
+	.product_id_product_num = PRODUCT_LINE_PACKAGE_CORNER_PACKAGE_WRAP,
+	.ir_mode = IR4_NON_LIVE_ACCESS_MODE, // will be overwritten by contents of nv memory
+	.legacy_device_type = G4DS_ALARM_UNIT,
+	.sdc = { 0 }, // will be overwritten by contents of nv memory
+	.my_sn = { 0 }, // will be overwritten by contents of nv memory
+	.IR4_8byte_SN = true,
+	.device_chirps = 1,
+	.waiting_for_TOKEN_CT_WIPE_timeout_msec = 0, // unused in this product
+	.legacy_code_reader_data = { 0 }, // unused in this product
+	.ir4_data =
+	{
+		.IR4_TwoKeyStatus = Ir4TwoKeyNotActive,
+		.IR4_key1_userid = { 0 },
+		.IR4_key2_userid = { 0 },
+		.IR4_key1_timeout = 0
+	},
+	.R_n_D_Key_supported = false,	/* TODO: (JLT) set to true until device is enrolled */
+	.ct_wipe_supported = false,
+	.is_my_sn_blank = false, // will be overwritten by contents of nv memory
+	.allow_IR_upgrade = false,
+	._buffers =
+	{
+		.rx_buffer = { 0 },
+		.tx_buffer = { 0 }
+	},
+	._priv_comm_vars = { 0 },
+	.callbacks =
+	{
+		.fill_in_IR3_blob = (size_t (*)(uint8_t[], size_t))0,
+		.get_IR3_Pod_Status = (IR3_pod_status_e (*)(void))0,
+		.get_IR3_FW_Version = (void (*)(uint8_t*))0,
+		.get_IR2_info = (void (*)(IR2_LockResults_e*, IR2_Status_e*))0,
+		.get_IR4_info = get_IR4_info,
+		.get_legacy_code_reader_data = (void (*)(uint8_t*, size_t))0,
+		.smartRetail_reject_tout_tst_key_function = (void (*)(invue_ir_mode_enum))0,
+		.smartRetail_reject_nonmatch_key_function = (void (*)(invue_ir_mode_enum))0,
+		.magicKey_cb = (void (*)(void))0
+	}
+};
+
+static const union
+{
+	uint8_t sn[DEVICE_SN_BYTES];
+	uint8_t sdc[SZ_OF_IR3_SDC];
+} blanks;
+
+
+#define IRKEY_KEEPALIVE_TIME_MS 1000
+static uint32_t active_timer;
+
+/****************************************************************************
+                            FUNCTION PROTOTYPES
+****************************************************************************/
+static void irKey_diff_sdc_and_update( uint8_t *_sdc);
+static void irKey_blocking_delay(void);
+
+/****************************************************************************
+                            CODE
+****************************************************************************/
+
+// Must NOT be called by OneKEY handler; this code must ONLY be called by the mKEY handler.
+bool factory_reset(void)
+{
+  uint16_t status = 0;
+  irKey_reset_sdc();  // clear SDC
+  irKey_reset_mode(); // Reset SDC status to IR1 mode
+  //  Set enrollment status to 0 (un-enrolled)
+  if(fcul_write(FLASH_KEY_ENROLL_STATUS, (uint8_t *) &status, STATUS_SIZE) != FLASH_WRITE_ERROR )
+  {
+      clear_Device_Status(ENROLLMENT_STATUS); //Success
+  }
+  else
+  {
+      set_Device_Status(FLASH_ERROR);  // We had a Flash error
+  }
+  // Set SDC status to in device status to no SDC
+  if(fcul_write(FLASH_KEY_ENROLL_STATUS, (uint8_t *) &status, STATUS_SIZE) != FLASH_WRITE_ERROR )
+  {
+      clear_Device_Status(ENROLLMENT_STATUS); //Success
+  }
+  else
+  {
+      set_Device_Status(FLASH_ERROR);  // We had a Flash error
+  }
+
+  if(fcul_write(FLASH_KEY_SDC_SET, (uint8_t *) &status, STATUS_SIZE) != FLASH_WRITE_ERROR )
+  {
+      clear_Device_Status(SDC_STATUS); //Success
+  }
+  else
+  {
+      set_Device_Status(FLASH_ERROR);  // We had a Flash error
+  }
+
+  // TODO: add in for erasing all encryption keys except for the factory keys.
+  return true;
+}
+
+void irkey_gl_init(uint8_t key_uart)
+{
+	/* Register a callback for the IR key blocking delay */
+	uart_defs[key_uart].uart_hal.blocking_delay = irKey_blocking_delay;
+
+	/* initialize the UART driver */
+	k_uart = uart_driver_init(uart_defs[key_uart].uart_bus_num, &(uart_defs[key_uart].uart_hal), rx_buf, RX_BUF_SIZE, tx_buf, TX_BUF_SIZE);
+
+    hal_uart_disable_tx(  &uart_defs[key_uart].uart_hal );
+    hal_uart_enable_rx( &uart_defs[key_uart].uart_hal );
+	//hal_gpio_set_output(RX_EN, true);
+
+	if( fcul_read(FLASH_KEY_SDC, sdc_ram_copy, SZ_OF_IR3_SDC) == FLASH_KEY_NOT_FOUND)
+	{
+		memset( sdc_ram_copy, 0, SZ_OF_IR3_SDC);
+	}
+#if USE_RTT_FOR_DEBUGGING
+	debug_rtt_printf("%s SDC 0x%02x%02x%02x%02x\r\n", __FUNCTION__,
+			ir_comm_ctx.sdc[0],
+			ir_comm_ctx.sdc[1],
+			ir_comm_ctx.sdc[2],
+			ir_comm_ctx.sdc[3]);
+#endif
+
+	/*
+	 * TODO: (JLT) Remove (by macro definition) when NFC is working
+	 */
+#if 1
+	if( fcul_read(FLASH_KEY_SERIAL_NUMBER, our_serial_ram_copy, DEVICE_SN_BYTES) == FLASH_KEY_NOT_FOUND)
+	{
+		memset( our_serial_ram_copy, 0, DEVICE_SN_BYTES);
+
+		/* there is no good way to handle this condition but, at this point, this is a true statement */
+		ir_comm_ctx.is_my_sn_blank = true;
+	}
+	else if (0 == memcmp(our_serial_ram_copy, blanks.sn, DEVICE_SN_BYTES))
+	{
+		ir_comm_ctx.is_my_sn_blank = true;
+	}
+	else
+	{
+		memcpy(ir_comm_ctx.my_sn, our_serial_ram_copy, DEVICE_SN_BYTES);
+	}
+
+#if USE_RTT_FOR_DEBUGGING
+	debug_rtt_printf("%s SN  0x%02x%02x%02x%02x%02x%02x%02x%02x\r\n", __FUNCTION__,
+			ir_comm_ctx.my_sn[0],
+			ir_comm_ctx.my_sn[1],
+			ir_comm_ctx.my_sn[2],
+			ir_comm_ctx.my_sn[3],
+			ir_comm_ctx.my_sn[4],
+			ir_comm_ctx.my_sn[5],
+			ir_comm_ctx.my_sn[6],
+			ir_comm_ctx.my_sn[7]);
+#endif
+#endif
+
+	ir_mode_ram_copy = IR4_NON_LIVE_ACCESS_MODE;
+	ir_comm_ctx.ir_mode = IR4_NON_LIVE_ACCESS_MODE;
+
+#if USE_RTT_FOR_DEBUGGING && DEBUG_IRKEY_GLUE
+	debug_rtt_printf("%s ir_mode_ram_copy %d\r\n", __FUNCTION__, ir_mode_ram_copy);
+#endif
+}
+
+bool irkey_gl_is_inactive(void)
+{
+#if 0
+	return ((0 == uart_driver_tx_bytes_remaining(k_uart)) && /* no bytes in the Tx queue                                 */
+			(0 == uart_driver_rx_bytes_remaining(k_uart)) && /* no bytes in the Rx queue                                 */
+			(!uart_driver_is_transmitter_enabled(k_uart)) && /* UART transmitter disabled                                */
+			( uart_driver_is_receiver_enabled(k_uart))    && /* UART receiver is enabled (front porch delay has expired) */
+			(!uart_driver_is_receiving(k_uart))           && /* UART is not actively receiving                           */
+			(!uart_driver_is_transmitting(k_uart))        && /* UART is not actively transmitting                        */
+			invue_is_ir_key_receiver_idle()               && /* IR key handler is waiting for its first byte             */
+			(block_lp_for_IR_tmr == 0 || (IR_wait_for_rtl_active && IR_wait_for_rtl_tmr == 0))                     &&
+			            ((rtl_received_flag && (blank_key_timer_msec != 0) ) == 0));
+#elif 1
+	volatile bool a = (0 == uart_driver_tx_bytes_remaining(k_uart));
+	volatile bool b = (0 == uart_driver_rx_bytes_remaining(k_uart));
+	volatile bool c = (!uart_driver_is_transmitter_enabled(k_uart));
+	//volatile bool d = ( uart_driver_is_receiver_enabled(k_uart));
+	volatile bool e = (!uart_driver_is_receiving(k_uart));
+	volatile bool f = (!uart_driver_is_transmitting(k_uart));
+	//volatile bool g = irComms_is_msg_parsing_idle(&ir_comm_ctx);
+	volatile bool h = (block_lp_for_IR_tmr == 0 /*|| (IR_wait_for_rtl_active && IR_wait_for_rtl_tmr == 0)*/);
+	volatile bool i = ((rtl_received_flag && (blank_key_timer_msec != 0) ) == 0);
+
+	return a && b && c && /*d &&*/ e && f && /*g &&*/ h && i;
+
+#else
+	return active_timer == 0;
+#endif
+}
+
+
+/*****************************************************************
+*  FncName        irKey_HandleTimers
+*  Description:
+*  parameters:  uint32_t elapsed_ms
+*  return:        void
+*****************************************************************/
+void irKey_gl_HandleTimers( uint32_t elapsed_ms )
+{
+	// TODO: Rewrite irKey_gl_HandleTimers to use the systick functions.
+#if 1
+    block_lp_for_IR_tmr = subsat_u32( block_lp_for_IR_tmr, elapsed_ms );
+    if( rtl_received_flag == false)
+    {
+    	IR_wait_for_rtl_tmr = subsat_u32( IR_wait_for_rtl_tmr, elapsed_ms );
+    }
+    /* if a RTL was previously received */
+    if (rtl_received_flag || blank_key_timer_msec > 0 )
+    {
+        blank_key_timer_msec = addsat_u32( blank_key_timer_msec, elapsed_ms );
+    }
+#else
+	subsat_u32(active_timer, elapsed_ms);
+#endif
+}
+
+
+
+
+uint32_t irkey_gl_getRxbyte( uint8_t *p_ReceivedByte )
+{
+	return uart_driver_byte_available(k_uart, p_ReceivedByte);
+}
+
+void irkey_gl_addTxByte( const uint8_t *p_TransmitByte )
+{
+#if USE_RTT_FOR_DEBUGGING && DEBUG_IRKEY_GLUE
+	debug_rtt_printf("%s 0x%02x\r\n", __FUNCTION__, *p_TransmitByte);
+#endif
+	uart_driver_tx_add_byte(k_uart, p_TransmitByte);
+}
+
+void irkey_gl_trigger_transmit( void )
+{
+	uart_driver_start_transmit_if_stopped(k_uart);
+}
+
+#if 0
+void irKey_gl_HandleTimers( uint32_t elapsed_ms )
+{
+	block_lp_for_IR_tmr = subsat_u32( block_lp_for_IR_tmr, elapsed_ms );
+
+	/* if a RTL was previously received */
+	if(rtl_received_flag)
+	{
+		if (blank_key_timer_msec < 4095 /* Limit to 4095mS*/)
+		{
+			blank_key_timer_msec = addsat_u32( blank_key_timer_msec, elapsed_ms );
+		}
+	}
+	else
+	{
+		blank_key_timer_msec = 0;
+	}
+	msec_since_last_rx = addsat_u32( msec_since_last_rx, elapsed_ms );
+}
+#endif
+
+/*****************************************************************
+*  FncName        irKey_CodeReader_Callback
+*  Description: Weak decleration of the callback. Implement in app code to provide specific app data back.
+*  parameters:  uint8_t codeReaderData[9]: 9-Byte array for code reader data
+*  return:        void
+*****************************************************************/
+__attribute__((weak))void irKey_CodeReader_Callback(uint8_t codeReaderData[9])
+{
+    codeReaderData[0] = 0;
+    codeReaderData[1] = 0;
+    codeReaderData[2] = 0;
+    codeReaderData[3] = 0;
+    codeReaderData[4] = 0;
+    codeReaderData[5] = (uint8_t)invue_fw_version_legacy;
+    codeReaderData[6] = (uint8_t)(invue_fw_version_legacy >> 8);
+    codeReaderData[7] = 0;	/* temperature */
+    codeReaderData[8] = 0;	/* cal data    */
+}
+
+void  irkey_gl_key_handler(void)
+{
+	uint8_t  received_byte              = 0;
+	uint8_t  byte_available_flag        = 0;
+	uint32_t tx_msg_length              = 0;
+	uint8_t* ir_msg_in_ptr              = 0;
+	uint8_t* ir_msg_out_ptr             = ir_comm_ctx._buffers.tx_buffer;
+	uint8_t  waiting_for_wipe_key_msec  = 0;
+	uint8_t  legacy_code_reader_data[9] = { 0 };
+	uint8_t  byte_out_cntr = 0;
+	uint16_t fw_version_to_send;
+	invue_ir_mode_enum ir_mode_temp = 		(invue_ir_mode_enum)ir_mode_ram_copy;
+    _ir_comms_output_s output;
+
+	/* if a byte is available */
+	if (0 == irkey_gl_getRxbyte(&received_byte))
+	{
+#if USE_RTT_FOR_DEBUGGING && DEBUG_IRKEY_GLUE
+	debug_rtt_printf("%s 0x%02x\r\n", __FUNCTION__, received_byte);
+#endif
+		byte_available_flag      = 1;
+		msec_since_last_rx       = 0;
+//		block_lp_for_IR_tmr = BLOCK_LP_FOR_IR_MAX_TIME_MS;						// Reset block_lp_for_IR_tmr each time a byte has been received & processed
+	}
+	/* call the byte handler; if the byte handler indicates a complete message is available */
+	if (irComms_get_ir_key_packet(&ir_comm_ctx, msec_since_last_rx, byte_available_flag, received_byte))
+	{
+		// handle the IR key message
+		tx_msg_length = irComms_handle_ir_key_message(&ir_comm_ctx, &output );
+
+		if (output.rtl_received)
+		{
+			rtl_received_flag = true;
+            IR_wait_for_rtl_active = false;
+        }
+
+		if (output.data_changed.sdc)
+		{
+			if (!irKey_have_valid_SDC() || ir_comm_ctx.R_n_D_Key_supported)
+			{
+#if USE_RTT_FOR_DEBUGGING
+				debug_rtt_printf("%s ram SDC 0x%02x%02x%02x%02x\r\n", __FUNCTION__,
+					sdc_ram_copy[0],
+					sdc_ram_copy[1],
+					sdc_ram_copy[2],
+					sdc_ram_copy[3]);
+				debug_rtt_printf("%s ctx SDC 0x%02x%02x%02x%02x\r\n", __FUNCTION__,
+					ir_comm_ctx.sdc[0],
+					ir_comm_ctx.sdc[1],
+					ir_comm_ctx.sdc[2],
+					ir_comm_ctx.sdc[3]);
+#endif
+				irKey_diff_sdc_and_update(ir_comm_ctx.sdc);			// Check if the SDC has changed
+
+#if USE_RTT_FOR_DEBUGGING
+				debug_rtt_printf("%s ram SDC 0x%02x%02x%02x%02x\r\n", __FUNCTION__,
+					sdc_ram_copy[0],
+					sdc_ram_copy[1],
+					sdc_ram_copy[2],
+					sdc_ram_copy[3]);
+				debug_rtt_printf("%s ctx SDC 0x%02x%02x%02x%02x\r\n", __FUNCTION__,
+					ir_comm_ctx.sdc[0],
+					ir_comm_ctx.sdc[1],
+					ir_comm_ctx.sdc[2],
+					ir_comm_ctx.sdc[3]);
+#endif
+			}
+		}
+
+#if 0	// DO NOT allow a serializer box or PC app to set the serial number as this is now exclusively done with the NFC NDEF record.
+		if (output.data_changed.serialNum)
+		{
+			if (ir_comm_ctx.is_my_sn_blank)
+			{
+#if USE_RTT_FOR_DEBUGGING && DEBUG_IRKEY_GLUE
+				debug_rtt_printf("%s ram SN  0x%02x%02x%02x%02x%02x%02x%02x%02x\r\n", __FUNCTION__,
+					our_serial_ram_copy[0],
+					our_serial_ram_copy[1],
+					our_serial_ram_copy[2],
+					our_serial_ram_copy[3],
+					our_serial_ram_copy[4],
+					our_serial_ram_copy[5],
+					our_serial_ram_copy[6],
+					our_serial_ram_copy[7]);
+				debug_rtt_printf("%s ctx SN  0x%02x%02x%02x%02x%02x%02x%02x%02x\r\n", __FUNCTION__,
+					ir_comm_ctx.my_sn[0],
+					ir_comm_ctx.my_sn[1],
+					ir_comm_ctx.my_sn[2],
+					ir_comm_ctx.my_sn[3],
+					ir_comm_ctx.my_sn[4],
+					ir_comm_ctx.my_sn[5],
+					ir_comm_ctx.my_sn[6],
+					ir_comm_ctx.my_sn[7]);
+#endif
+
+				irKey_diff_serial_and_update(ir_comm_ctx.my_sn);		// Check if the serial number has changed
+
+				#if USE_RTT_FOR_DEBUGGING && DEBUG_IRKEY_GLUE
+				debug_rtt_printf("%s ram SN  0x%02x%02x%02x%02x%02x%02x%02x%02x\r\n", __FUNCTION__,
+					our_serial_ram_copy[0],
+					our_serial_ram_copy[1],
+					our_serial_ram_copy[2],
+					our_serial_ram_copy[3],
+					our_serial_ram_copy[4],
+					our_serial_ram_copy[5],
+					our_serial_ram_copy[6],
+					our_serial_ram_copy[7]);
+				debug_rtt_printf("%s ctx SN  0x%02x%02x%02x%02x%02x%02x%02x%02x\r\n", __FUNCTION__,
+					ir_comm_ctx.my_sn[0],
+					ir_comm_ctx.my_sn[1],
+					ir_comm_ctx.my_sn[2],
+					ir_comm_ctx.my_sn[3],
+					ir_comm_ctx.my_sn[4],
+					ir_comm_ctx.my_sn[5],
+					ir_comm_ctx.my_sn[6],
+					ir_comm_ctx.my_sn[7]);
+#endif
+			}
+		}
+#endif
+
+		/* reset the blank key timer upon every received message */
+		blank_key_timer_msec = 0;
+
+		// if there is data to transmit
+		if (tx_msg_length > 0)
+		{
+			hal_uart_disable_rx( k_uart->uart_hal );
+            /* From F1885: IR3 Test Key in IR1 mode wasn't getting some responses and would send retries. I found that the TX seemed to be turning on too fast for the IR Key on hand. Adding 1-bit time
+             * of delay helped but didn't resolve the issue. 500uS seemed to resolve the issue but is loooong. 250uS seems stable too but has a few double chirps in 20 key presses.
+             * I think I vaguely remember Mike W saying something about not responding too fast or it will cause IR3 Key to drop data.
+             */
+            hal_timer_blocking_delay_variable_usec(300);
+
+			hal_uart_enable_tx( k_uart->uart_hal );
+
+            /* Make sure we have a good valid front porch for start bit on response. Some keys are picky. We should provide at least 1 full frame = 1.52mS (10bits).
+             * I usually use 2ms here but I dropped it to 1526us for 1 frame time */
+			hal_timer_blocking_delay_variable_usec(IR_FRAME_TIME_USEC);
+
+			/* transmit the packet */
+			for (byte_out_cntr = 0; byte_out_cntr < tx_msg_length; ++byte_out_cntr)
+			{
+				irkey_gl_addTxByte(&ir_msg_out_ptr[byte_out_cntr]);
+			}
+			block_lp_for_IR_tmr = BLOCK_LP_FOR_IR_MAX_TIME_MS;
+			irkey_gl_trigger_transmit();
+		}
+	}
+    /* if the blank key timeout has occurred */
+    if (blank_key_timer_msec >= IR_RX_TIMEOUT_MSEC)
+    {
+        // clear the RTL received flag
+        rtl_received_flag = false;
+
+        /* clear the blank key timer */
+        blank_key_timer_msec = 0;
+
+        /* indicate a blank key is in use, passing in a pointer to the actual SDC in RAM */
+        irComms_blank_key_used(ir_mode_temp, sdc_ram_copy);
+    }
+}
+
+/** @brief single_ir_keypress_detected
+*  @details
+*  @param[in] void
+*  @return bool
+*/
+bool single_ir_keypress_detected( void )
+{
+	return irComms_was_valid_sdc_received();
+}
+
+#if NOT_USED
+/** @brief irkey_gl_switchHWToKeyComms
+ *  @details: Handle HW switch over from bootloader comms to IR Key Comms
+ *  @param[in] void
+ *  @return void
+ */
+void irkey_gl_switchHWToKeyComms( void )
+{
+	if(k_uart != NULL )
+	{
+		hal_interrupts_disable();
+		hal_uart_disable_tx(k_uart->uart_hal);
+		hal_uart_disable_rx(k_uart->uart_hal);
+
+		// Adjust the baud rate
+		k_uart->uart_hal->target_baud_bps = IR_COMMS_BAUD;
+
+		// Re-initialize the uart with the new baud rate
+		hal_uart_init(k_uart->uart_hal);
+
+		// Reset Queues
+		k_uart->rx_queue.input = 0;
+		k_uart->rx_queue.output = 0;
+		k_uart->tx_queue.input = 0;
+		k_uart->tx_queue.output = 0;
+
+		hal_uart_enable_rx(k_uart->uart_hal);
+		hal_interrupts_enable();
+	}
+}
+#endif
+
+#if NOT_USED
+/** @brief irkey_gl_setIRKeyCommsEnabled
+ *  @details:
+ *  @param[in] void
+ *  @return void
+ */
+void irkey_gl_setIRKeyCommsEnabled( void )
+{
+	is_irkey_comms_allowed = true;
+}
+#endif
+
+/** @brief ir_rx_gpio_cb
+ *  @details Callback for IR RX GPIO Interrupt while in low power mode
+ *  @param[in] intNum: Interrupt #
+ *  @return void
+ */
+void set_irkey_task_ready_flag_if_not_scheduled(void);
+void ir_rx_gpio_cb( uint32_t intNum )
+{
+	(void)intNum;
+	ir_rx_wake_flag = true;
+	active_timer = SCHGLUE_INTERRUPT_MS_TO_COUNT(IRKEY_KEEPALIVE_TIME_MS);
+	set_irkey_task_ready_flag_if_not_scheduled();
+}
+
+/** @brief set_ir_for_sleep
+ *  @details Setup IR GPIO for sleep mode
+ *  @param[in] void
+ *  @return void
+ */
+void set_ir_for_sleep( void )
+{
+	hal_uart_disable_rx(k_uart->uart_hal);
+	hal_uart_configure_gpio( k_uart->uart_hal, false /*conn_tx*/, false /*conn_rx*/, false /*conn_dir*/);			// Disconnect Rx & TX from UART to allow GPIO change
+    hal_gpio_set_output( IR_TXD, 0);
+    hal_gpio_set_pull( IR_TXD, GPIO_PULLDOWN);
+    hal_gpio_set_pin_mode(IR_TXD, TXD_MODE_FOR_IDLE_SLEEP );
+	ir_rx_wake_flag = false;
+	IR_wait_for_rtl_active = false;
+	block_lp_for_IR_tmr = 0;
+	IR_wait_for_rtl_tmr = 0;
+}
+
+/** @brief set_ir_for_active
+ *  @details Setup IR GPIO for active mode
+ *  @param[in] void
+ *  @return void
+ */
+void set_ir_for_active( void )
+{
+#if 0 // TODO: (JLT) Always allow IR interrupt?
+	hal_gpio_disable_pin_interrupt( IR_RXD );
+	hal_gpio_set_pin_isr_cb( IR_RXD, NULL);
+#endif
+	if(ir_rx_wake_flag)
+	{
+		ir_rx_wake_flag = false;
+		block_lp_for_IR_tmr = BLOCK_LP_FOR_IR_MAX_TIME_MS;
+		IR_wait_for_rtl_tmr = MAX_TIME_TO_WAIT_FOR_A_RTL_MS;
+		IR_wait_for_rtl_active = true;
+	}
+    // Switch IR TXD back to no pulldown + pushpull config before mapping back to UART control
+    hal_gpio_set_output( IR_TXD, 0);
+    hal_gpio_set_pull( IR_TXD, GPIO_NOPULL);
+    hal_gpio_set_pin_mode(IR_TXD, TXD_MODE_ACTIVE );
+
+	hal_uart_configure_gpio( &uart_defs[UART_IR_COMMS].uart_hal, true /*conn_tx*/, true /*conn_rx*/, false /*conn_dir*/);	// Reconnect Rx & TX to UART
+	hal_uart_enable_rx(k_uart->uart_hal);
+}
+
+#if NOT_USED
+/** @brief irKey_runLoopback
+ *  @details Performs simple loopback on the ir circuit
+				with gpio control. Cant use uart and the detector's
+				response is too slow when it is flooded.
+				Note, this function prototype is defined to set
+				local optimization to -O0 (off) as optimization really
+				messed up the if conditional check at the end.
+ *  @param[in] void
+ *  @return bool
+ */
+bool irKey_runLoopback( void )
+{
+	uint32_t loopCount = 0;
+	uint32_t inputLowCounter = 0;
+	uint32_t inputHighCounter = 0;
+	uint32_t i = 0;
+
+	hal_uart_disable_tx(  &uart_defs[UART_IR_KEY].uart_hal );
+	hal_uart_disable_rx( &uart_defs[UART_IR_KEY].uart_hal );
+
+	hal_gpio_set_output( IO_IR_TX_KEY, 0);
+
+	hal_uart_configure_gpio( &uart_defs[UART_IR_KEY].uart_hal, false /*conn_tx*/, false /*conn_rx*/, false /*conn_dir*/);
+
+	for( loopCount = 0; loopCount < IR_LOOPBACK_LOOP_CNT; loopCount++)
+	{
+		hal_gpio_set_output( IO_IR_TX_KEY, 0);
+		hal_timer_blocking_delay_for_152us();					// This is important to let the receiver sync up as when it is flooded it has a slow response.
+		for(i = 0; i < IR_LOOPBACK_SIGNAL_DWELL_CNT; i++)
+		{
+			inputLowCounter += (hal_gpio_get_input( IO_IR_RX_KEY ) == 0);
+		}
+
+		hal_gpio_set_output( IO_IR_TX_KEY, 1);
+		hal_timer_blocking_delay_for_152us();					// This is important to let the receiver sync up as when it is flooded it has a slow response.
+		for(i = 0; i < IR_LOOPBACK_SIGNAL_DWELL_CNT; i++)
+		{
+			inputHighCounter += (hal_gpio_get_input( IO_IR_RX_KEY ) == 1);
+		}
+	}
+
+	hal_gpio_set_output( IO_IR_TX_KEY, 0);
+
+	hal_uart_configure_gpio( &uart_defs[UART_IR_KEY].uart_hal, true /*conn_tx*/, true /*conn_rx*/, false /*conn_dir*/);
+	hal_uart_disable_tx(  &uart_defs[UART_IR_KEY].uart_hal );
+	hal_uart_enable_rx( &uart_defs[UART_IR_KEY].uart_hal );
+
+
+	if( inputLowCounter >= IR_LOOPBACK_PASS_CNT && inputHighCounter >= IR_LOOPBACK_PASS_CNT )
+	{
+		return true;
+	}
+	return false;
+}
+#endif
+
+/** @brief irKey_reset_sdc
+ *  @details
+ *  @param[in] void
+ *  @return void
+ */
+void irKey_reset_sdc(void)
+{
+	memset( sdc_ram_copy, 0, SZ_OF_IR3_SDC);
+	(void)fcul_write(FLASH_KEY_SDC, sdc_ram_copy/*ram copy*/, SZ_OF_IR3_SDC);
+}
+
+/** @brief irKey_reset_mode
+ *  @details
+ *  @param[in] void
+ *  @return void
+ */
+void irKey_reset_mode(void)
+{
+	(void)fcul_write(FLASH_KEY_IR3_MODE, &ir_mode_ram_copy/*ram copy*/, sizeof(ir_mode_ram_copy));
+}
+
+/** @brief is_my_serial_valid
+ *  @details
+ *  @param[in] void
+ *  @return bool: true if the serial is present and appears valid
+ */
+bool is_my_serial_valid( void )
+{
+	// The serial number has already been read from NV Data on boot.
+	// If it didn't exist, it would be set to all 0's
+	// This if check will capture all zero condition, all FF condition, and wrong serial number condition
+	if( our_serial_ram_copy[0] != OUR_PROD_CATEGORY || our_serial_ram_copy[1] != OUR_PROD_ID )
+		return false;
+	return true;
+}
+
+/** @brief irKey_have_valid_SDC
+ *  @details
+ *  @param[in] void
+ *  @return bool: true if we have a SDC
+ */
+bool irKey_have_valid_SDC( void )
+{
+	return ( !(sdc_ram_copy[0] == 0 && sdc_ram_copy[1] == 0 && sdc_ram_copy[2] == 0 && sdc_ram_copy[3] == 0 ) );
+}
+
+/** @brief irKey_has_authorized_key_been_used_first_time
+ *  @details
+ *  @param[in] void
+ *  @return bool
+ */
+bool irKey_has_authorized_key_been_used_first_time( void )
+{
+	bool temp = first_valid_authorized_key_used;
+	first_valid_authorized_key_used = false;
+	return temp;
+}
+
+void flash_debug(void)
+{
+  generic_debug("INVADD: %u\r\n", MSC->STATUS & MSC_STATUS_INVADDR );
+  generic_debug("PENDING: %u\r\n", MSC->STATUS & MSC_STATUS_PENDING );
+  generic_debug("PWRON: %u\r\n", MSC->STATUS & MSC_STATUS_PWRON );
+}
+
+
+/** @brief irKey_diff_serial_and_update
+ *  @details
+ *  @param[in] uint8_t *_sn
+ *  @return void
+ */
+void irKey_diff_serial_and_update( uint8_t *_sn )
+{
+	//uint32_t writeResult;
+	if( memcmp( _sn, our_serial_ram_copy/*ram copy*/,DEVICE_SN_BYTES ) != 0)
+	{
+		flash_debug();
+
+		if(fcul_write( FLASH_KEY_SERIAL_NUMBER, (const uint8_t*)_sn, DEVICE_SN_BYTES)  == DEVICE_SN_BYTES)
+		{
+			memcpy( our_serial_ram_copy, _sn, DEVICE_SN_BYTES);
+			ir_comm_ctx.is_my_sn_blank = false;
+			generic_debug("Flash write succeeded %u\r\n",our_serial_ram_copy[0]);
+		}
+		else
+	    {
+		    generic_debug("Flash write failed\r\n");
+	    }
+	}
+}
+
+/** @brief irKey_diff_sdc_and_update
+ *  @details
+ *  @param[in] uint8_t *_sdc
+ *  @return void
+ */
+static void irKey_diff_sdc_and_update( uint8_t *_sdc)
+{
+	if( memcmp( _sdc, sdc_ram_copy/*ram copy*/,SZ_OF_IR3_SDC ) != 0)
+	{
+		if( ( irKey_have_valid_SDC() == false ) &&													// If current SDC is all 0's
+			( _sdc[0] != 0 ) && ( _sdc[1] != 0 ) && ( _sdc[2] != 0 ) && ( _sdc[3] == 0 )	)		// if received SDC is not all 0's
+		{
+			first_valid_authorized_key_used = true;
+		}
+		if( fcul_write(FLASH_KEY_SDC, (const uint8_t*)_sdc, SZ_OF_IR3_SDC) == SZ_OF_IR3_SDC)
+		{
+			memcpy( sdc_ram_copy, _sdc, SZ_OF_IR3_SDC);
+		}
+	}
+}
+
+/** @brief irKey_blocking_delay
+ *  @details 	Blocking delay after transmission complete. invue_ir1_ir2.h comments explain why this is needed
+ *  @param[in] void
+ *  @return void
+ */
+static void irKey_blocking_delay(void)
+{
+	hal_uart_disable_tx(k_uart->uart_hal);
+	hal_timer_blocking_delay_for_152us();
+}
+

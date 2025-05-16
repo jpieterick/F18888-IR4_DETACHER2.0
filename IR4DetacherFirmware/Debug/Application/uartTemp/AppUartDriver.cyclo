@@ -1,0 +1,16 @@
+../Application/uartTemp/AppUartDriver.c:54:18:AppUartDriver_init	3
+../Application/uartTemp/AppUartDriver.c:122:18:AppUartDriver_init_this_uart	1
+../Application/uartTemp/AppUartDriver.c:134:13:uarta_driver_buffered_byte_rx	1
+../Application/uartTemp/AppUartDriver.c:147:16:uarta_driver_buffered_byte_tx	1
+../Application/uartTemp/AppUartDriver.c:164:6:uartc_driver_buffered_byte_rx	1
+../Application/uartTemp/AppUartDriver.c:168:16:uartc_driver_buffered_byte_tx	1
+../Application/uartTemp/AppUartDriver.c:186:14:AppUartDriver_byte_available	1
+../Application/uartTemp/AppUartDriver.c:191:14:AppUartDriver_tx_bytes_remaining	1
+../Application/uartTemp/AppUartDriver.c:196:14:AppUartDriver_rx_bytes_remaining	1
+../Application/uartTemp/AppUartDriver.c:201:14:AppUartDriver_tx_bytes_available	1
+../Application/uartTemp/AppUartDriver.c:206:6:AppUartDriver_tx_add_byte	1
+../Application/uartTemp/AppUartDriver.c:237:6:AppUartDriver_is_transmitter_enabled	1
+../Application/uartTemp/AppUartDriver.c:243:6:AppUartDriver_is_receiver_enabled	1
+../Application/uartTemp/AppUartDriver.c:250:6:AppUartDriver_is_receiving	1
+../Application/uartTemp/AppUartDriver.c:255:6:AppUartDriver_is_transmitting	1
+../Application/uartTemp/AppUartDriver.c:260:6:AppUartDriver_start_transmit_if_stopped	1

@@ -241,9 +241,10 @@ enum adc_id
 /******************************************************************
  *                           UART
  * ***************************************************************/
-#define USE_HAL_UART
+//#define USE_HAL_UART
+#define USE_APP_UART
 
-#if defined USE_HAL_UART
+#if !defined USE_APP_UART
 
 // Setup the #defines for the UART index constants. Note that #defines are being used instead of an enum
 // because these constants are used in #ifdef statements as well as to index into arrays. These index

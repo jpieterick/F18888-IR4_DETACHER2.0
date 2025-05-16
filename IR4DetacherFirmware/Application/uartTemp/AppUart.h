@@ -1,0 +1,165 @@
+/**********************************
+ * File: AppUart.h
+ * Invue Security Products
+ * Copyright 2020
+ **********************************/
+
+#ifndef __AppUart_H
+#define __AppUart_H
+#ifdef __cplusplus
+ extern "C" {
+#endif
+#include <stdbool.h>
+#include <stdint.h>
+#include "periphdefs.h"
+
+
+// Include this definition in periphdefs.h
+#if defined USE_APP_UART
+
+
+#define USING_UART1
+//#define USING_UART2
+#define USING_UART3
+//#define USING_UART4
+//#define USING_LPUART1
+#define USING_INVUE_IRQ
+
+#define UPAB_UART_INDEX         (UART3INDX)
+#define IR_INTERFACE_UART_INDEX (UART1INDX)
+//*******************************************************************************************************
+
+ typedef enum uart_indx
+ {
+    UART1INDX,
+#ifdef USING_UART2
+ 	UART2INDX,
+#endif
+#ifdef USING_UART3
+ 	UART3INDX,
+#endif
+ #ifdef USING_UART4
+ 	UART4INDX,
+ #endif
+ 	NUMBER_OF_UARTS
+ } uart_indx_t;
+ /*
+ #define UART_IR_DOT (UART1ID)  // ir dot or daisy chaining
+ #define UART_POWER (UART2ID)   // micro usb power
+ #define UART_LORA (UART3ID)
+ */
+ enum uart_type
+ {
+     UART_LOW_POWER,
+     UART_STANDARD
+ };
+
+ typedef enum
+ {
+ 	UART_TYPE_USART,
+ 	UART_TYPE_LPUART
+ } module_type_t;
+
+ typedef enum uart_mode
+ {
+   NOT_INITIALIZED,
+   ONE_WIRE,
+   TWO_WIRE,
+   TWO_PINS_ONE_WIRE,
+   ONE_WIRE_NO_EXTERNAL_PULLUP
+ } uart_mode_t;
+
+#if 0
+ enum uart_baud_rates
+ {
+     BAUD_6553,
+     BAUD_9600,
+     BAUD_38400,
+     BAUD_115200
+ };
+#endif
+
+ typedef void (*blocking_callback)(void);
+
+ typedef struct
+ {
+ 	USART_TypeDef* 		  uart_module;  	/* both LPUART and USARTS are this type */
+ 	module_type_t		    uart_type;
+ 	uart_mode_t			    uart_mode;
+   uint32_t       		  target_baud_bps;
+   uint32_t        	  module_clock_hz;
+   blocking_callback 	blocking_delay; /* assign a blocking delay callback if you want a delay after a Tx prior to re-enabling Rx (IR Key).  Otherwise set it to (void*)0 */
+ } uart_hal_t;
+
+ typedef struct
+ {
+ 	uint8_t     uart_bus_num;
+ 	uart_hal_t  uart_hal;
+ } uart_config_t;
+
+ extern uart_config_t uart_defs[NUMBER_OF_UARTS];
+
+
+
+ //*******************************************************************************************************
+
+void AppUart_init(uart_hal_t* uart_hal);
+void AppUart_deinit(uart_hal_t* uart_hal);
+
+void AppUartA_callback_init(uint8_t (*tx_ready)(uint8_t* byte_to_tx), void (*byte_received)(uint8_t byte_in));
+#ifdef USING_UART2
+void AppUartB_callback_init(uint8_t (*tx_ready)(uint8_t* byte_to_tx), void (*byte_received)(uint8_t byte_in));
+#endif
+#ifdef USING_UART3
+void AppUartC_callback_init(uint8_t (*tx_ready)(uint8_t* byte_to_tx), void (*byte_received)(uint8_t byte_in));
+#endif
+#ifdef USING_UART4
+void AppUartD_callback_init(uint8_t (*tx_ready)(uint8_t* byte_to_tx), void (*byte_received)(uint8_t byte_in));
+#endif
+
+void AppUart_enable_tx(uart_indx_t uartIndx);
+void AppUart_disable_tx(uart_indx_t uartIndx);
+
+void AppUart_enable_rx(uart_indx_t uartIndx);
+void AppUart_disable_rx(uart_indx_t uartIndx);
+
+uint8_t AppUart_read_byte(uart_indx_t uartIndx);
+
+/* Enables the Tx, and Tx Complete and/or Tx transmit register empty
+ * interrupts, and sends the byte.
+ *
+ * After the Tx of one byte, the tx_ready() callback function will be called
+ * from the UART's interrupt context.  YOU implement the tx_ready() function,
+ * and register it with the AppUartX_callback_init() function.  tx_ready() can
+ * optionally return a non-zero value, in which case the parameter byte_to_tx
+ * holds the next byte to transmit.  If tx_ready() returns zero, then the Tx is
+ * disabled.  In this way, you can continually, byte by byte, pop off one byte
+ * at a time from your application's queue, for transmission, automatically,
+ * all in an interrupt context, until your queue is empty.
+ *
+ * If you desire to control exactly when the next byte is transmitted, then
+ * just always have tx_ready() return zero.
+ */
+void AppUart_send_byte(uart_hal_t* uart_hal, uint8_t data_out);
+
+bool AppUart_is_waiting_for_transmit_complete(uart_indx_t uartIndx);
+
+void AppUart_change_mode(uart_indx_t uartIndx,uart_mode_t newMode);
+
+void AppUart_change_baudrate(uart_indx_t uartIndx,uint32_t newTargetBaudRate);
+
+uart_config_t AppUart_get_def(uart_indx_t uartIndx);
+
+#if 0
+void AppUart_swap_tx_rx(uart_hal_t* uart_hal);
+void AppUart_unswap_tx_rx(uart_hal_t* uart_hal);
+void AppUart_enable_one_wire_mode(uart_hal_t* uart_hal);
+void AppUart_disable_one_wire_mode(uart_hal_t* uart_hal);
+#endif
+#endif  // USE_APP_UART
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif // __AppUart_H

@@ -3,38 +3,38 @@
 	<item key="hasShownOverlayPopupBefore" value="true"/>
 	<item key="replaceBarOpen" value="true"/>
 	<list key="searchhistory">
-		<item value="dutyCyclePctTimes100"/>
-		<item value="PWM_DEFAULT_DUTY_CYCLE_TIMES_100"/>
-		<item value="Activate"/>
-		<item value="buttonPressed"/>
-		<item value="SetPwmDutyCycle"/>
-		<item value="hal_timer_SetPwmDutyCycle"/>
-		<item value="period"/>
-		<item value="PWM"/>
-		<item value="#define "/>
-		<item value=" HAL_DEBOUNCE_H_"/>
-		<item value="IR_wait_for_rtl_tmr"/>
-		<item value="IR1"/>
-		<item value="SDC"/>
-		<item value="PWM_TIMER_PRESCALE_VALUE"/>
-		<item value="PWM_TIMER_CLOCK_FREQUENCY_HZ"/>
+		<item value="usart1_mode"/>
+		<item value="USE_TEST_SN"/>
+		<item value="k_uart"/>
+		<item value="ir_comm_ctx"/>
+		<item value="rx_buf"/>
+		<item value="rx_buff"/>
+		<item value="RX_BUF_SIZE"/>
+		<item value="ThisUartIndx"/>
+		<item value="blocking_delay"/>
+		<item value="UART3INDX"/>
+		<item value="usart2_transmit_ready_callback"/>
+		<item value="UART2INDX"/>
+		<item value="battery"/>
+		<item value="invue_ir_key_handler_app"/>
+		<item value="IRKeyHandlerInit"/>
 	</list>
 	<list key="replacehistory">
+		<item value="LastExecutionTickCount"/>
+		<item value="AppUart"/>
+		<item value="IR_INTERFACE_UART_INDEX"/>
+		<item value="AppUartDriver"/>
+		<item value="IR_COMM_UART_INDX"/>
+		<item value="IRDeviceHandlerApp"/>
+		<item value="IRDeviceHandlerInit"/>
+		<item value="LOOP_THROTTLE_INTERVAL"/>
+		<item value="LastLoopTick"/>
 		<item value="dutyCyclePct"/>
 		<item value="PWM_DEFAULT_DUTY_CYCLE"/>
 		<item value="Stop"/>
 		<item value="buttonWasPressed"/>
 		<item value="RunPwAtDutyCycle"/>
 		<item value="arrValue"/>
-		<item value="    "/>
-		<item value=" _UTIL_DEBOUNCE_H_"/>
-		<item value="PIEZO_PWM_PRESCALER"/>
-		<item value="PIEZO_TIMER_CLOCK_FREQUENCY"/>
-		<item value="IR_UART_RX"/>
-		<item value="IR3_pod_status_e"/>
-		<item value="Compare 6"/>
-		<item value="Compare 5"/>
-		<item value="Compare 4"/>
 	</list>
 	<section name="org.eclipse.ui.texteditor.FindReplaceDialog">
 		<item key="wrap" value="true"/>

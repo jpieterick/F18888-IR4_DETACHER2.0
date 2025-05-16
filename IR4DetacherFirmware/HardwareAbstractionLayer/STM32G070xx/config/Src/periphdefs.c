@@ -9,6 +9,7 @@
 #include "stm32g0xx.h"
 //#include "live_defaults.h"
 #include "periphdefs.h"
+#include "AppUart.h"
 #include "usart.h"
 
 
@@ -50,6 +51,7 @@ irq_config_t irq_priorities[NUM_PRIORITIZED_IRQS] =
 		{USART3_4_IRQn, 	NVIC_PRIORITY_MID_LOW},        // LORA_Dongle
 };
 
+#ifndef USE_APP_UART
 uart_config_t uart_defs[NUMBER_OF_UARTS] =
 {
 	{
@@ -105,3 +107,4 @@ uart_config_t uart_defs[NUMBER_OF_UARTS] =
 	},
 #endif
 };
+#endif // #ifndef USE_APP_UART

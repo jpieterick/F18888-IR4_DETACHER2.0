@@ -39,14 +39,12 @@ bool should_box_led_show_security( void )
 
 uint8_t what_is_my_product_family( void )
 {
-	// TODO: Fillin the product line/category.
-	return PRODUCT_LINE_KEY;
+	return PRODUCT_LINE_POD;
 }
 
 uint8_t what_is_my_product_id( void )
 {
-	// TODO: Fill in the product ID.
-	return PRODUCT_LINE_KEY_IR4_DETACHER;
+	return PRODUCT_LINE_POD_IR4_DETACHER;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
